@@ -57,6 +57,7 @@ func (f F) NewString(v string) *StringFlag {
 	return &StringFlag{F: f, Value: v}
 }
 
+func (f *F) Base() *F          { return f }
 func (f *IntFlag) Base() *F    { return &f.F }
 func (f *BoolFlag) Base() *F   { return &f.F }
 func (f *StringFlag) Base() *F { return &f.F }
@@ -130,6 +131,7 @@ func (f *IntFlag) VInt() int          { return f.Value }
 func (f *BoolFlag) VBool() bool       { return f.Value }
 func (f *StringFlag) VString() string { return f.Value }
 
+func (f *F) VAny() interface{}          { return nil }
 func (f *IntFlag) VAny() interface{}    { return f.Value }
 func (f *BoolFlag) VAny() interface{}   { return f.Value }
 func (f *StringFlag) VAny() interface{} { return f.Value }

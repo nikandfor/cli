@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -66,5 +67,60 @@ func CompleteLast(args []string) (bool, string) {
 }
 
 func DefaultCommandComplete(c *Command) error {
+	pref := c.Args().Last()
+	if len(c.Commands) == 0 {
+		fmt.Fprintf(Writer, "compgen -o default \"%s\"", pref)
+		return nil
+	}
+
+	var names []string
+
+	if !strings.HasPrefix(pref, "-") {
+		for _, s := range c.Commands {
+			if strings.HasPrefix(s.Name, pref) {
+				names = append(names, s.Name)
+				continue
+			}
+			if pref == "" {
+				continue
+			}
+			for _, a := range s.Aliases {
+				if !strings.HasPrefix(a, pref) {
+					continue
+				}
+				names = append(names, a)
+			}
+		}
+	}
+
+	if pref == "" || strings.HasPrefix(pref, "-") {
+		addflag := func(n string) bool {
+			if len(n) == 1 {
+				n = "-" + n
+			} else {
+				n = "--" + n
+			}
+			if !strings.HasPrefix(n, pref) {
+				return false
+			}
+			names = append(names, n)
+			return true
+		}
+		for _, f := range c.Flags {
+			b := f.Base()
+			if addflag(b.Name) {
+				continue
+			}
+			if pref == "" {
+				continue
+			}
+			for _, a := range b.Aliases {
+				addflag(a)
+			}
+		}
+	}
+
+	fmt.Fprintf(Writer, `compgen -W "%s"`, strings.Join(names, " "))
+
 	return nil
 }

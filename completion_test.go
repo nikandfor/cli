@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -54,4 +55,58 @@ func TestCompletionNew(t *testing.T) {
 	assert.Equal(t, true, c.Flags[0].VBool())
 	assert.False(t, act)
 	assert.True(t, comp)
+}
+
+func TestDefaultCommandCompletion(t *testing.T) {
+	c := &Command{
+		Name: "root",
+		Commands: []*Command{
+			{Name: "cmda", Aliases: []string{"ca"}},
+			{Name: "cmdb", Aliases: []string{"cb"}},
+			{Name: "bmd", Aliases: []string{"cd"}},
+		},
+		Flags: []Flag{
+			&F{Name: "flag", Aliases: []string{"f"}},
+			&F{Name: "fmag", Aliases: []string{"m"}},
+		},
+	}
+
+	var buf bytes.Buffer
+	Writer = &buf
+
+	err := DefaultCommandComplete(c)
+	assert.NoError(t, err)
+	assert.Equal(t, `compgen -W "cmda cmdb bmd --flag --fmag"`, buf.String())
+
+	buf.Reset()
+	c.args = Args{"c"}
+	err = DefaultCommandComplete(c)
+	assert.NoError(t, err)
+	assert.Equal(t, `compgen -W "cmda cmdb cd"`, buf.String())
+
+	buf.Reset()
+	c.args = Args{"-"}
+	err = DefaultCommandComplete(c)
+	assert.NoError(t, err)
+	assert.Equal(t, `compgen -W "--flag --fmag"`, buf.String())
+
+	buf.Reset()
+	c.args = Args{"-m"}
+	err = DefaultCommandComplete(c)
+	assert.NoError(t, err)
+	assert.Equal(t, `compgen -W "-m"`, buf.String())
+
+	c.Commands = nil
+
+	buf.Reset()
+	c.args = Args{""}
+	err = DefaultCommandComplete(c)
+	assert.NoError(t, err)
+	assert.Equal(t, `compgen -o default ""`, buf.String())
+
+	buf.Reset()
+	c.args = Args{"a"}
+	err = DefaultCommandComplete(c)
+	assert.NoError(t, err)
+	assert.Equal(t, `compgen -o default "a"`, buf.String())
 }

@@ -115,6 +115,27 @@ func (c *Command) Flag(n string) Flag {
 
 func (c *Command) Args() Args { return c.args }
 
+func (a Args) First() string {
+	if len(a) == 0 {
+		return ""
+	}
+	return a[0]
+}
+
+func (a Args) Last() string {
+	if len(a) == 0 {
+		return ""
+	}
+	return a[len(a)-1]
+}
+
+func (a Args) Tail() Args {
+	if len(a) == 0 {
+		return nil
+	}
+	return a[1:]
+}
+
 // --
 
 func (c *Command) flag(n string) FlagDev {
