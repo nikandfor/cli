@@ -125,7 +125,7 @@ func TestCompleteFlag(t *testing.T) {
 			F{Name: "flag"}.NewBool(false),
 			F{Name: "int", Aliases: []string{"i"}}.NewInt(0),
 			F{Name: "val", Aliases: []string{"v"},
-				Complete: func(f Flag, last string) error {
+				Complete: func(f Flag, _ *Command, last string) error {
 					fcomp = true
 					return nil
 				},

@@ -22,8 +22,7 @@ import (
 var file *os.File
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
+	app.App.Action = app.DefaultHelpAction
 	app.App.Commands = []*app.Command{
 		{Name: "greeting",
 			Action: hello,
@@ -54,7 +53,7 @@ func main() {
 				},
 			},
 			Flags: []app.Flag{
-				app.F{Name: "file"}.NewFile("greetings.txt"),
+				app.F{Name: "file"}.NewFile("greetings.txt"), // it's the same as StringFlag but has Completion
 				app.F{Name: "name"}.NewString(""),
 			},
 		},
@@ -70,6 +69,9 @@ func main() {
 			Hidden: true,
 			Action: secret,
 			Flags: []app.Flag{
+				// *F could be used as flag without any value
+				// Here it's used to shadow and disable any actions of parent flags with the same names
+				// But also it could be used to invoke custom Before of After FlagAction in moment of parsing
 				&app.F{Name: "help", Aliases: []string{"h"}},
 			},
 		},
@@ -82,6 +84,8 @@ func main() {
 }
 
 func random(c *app.Command) error {
+	rand.Seed(time.Now().UnixNano())
+
 	min := c.Flag("min").VInt()
 	max := c.Flag("max").VInt()
 	cr := c.Flag("c").VBool()
@@ -106,6 +110,8 @@ func random(c *app.Command) error {
 }
 
 func hello(c *app.Command) error {
+	rand.Seed(time.Now().UnixNano())
+
 	name := c.Flag("name").VString()
 
 	_, err := file.Seek(0, os.SEEK_SET)

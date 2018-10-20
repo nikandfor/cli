@@ -31,6 +31,17 @@ var (
 	}
 )
 
+func NewActionChain(a ...Action) Action {
+	return func(c *Command) error {
+		for _, a := range a {
+			if err := a(c); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
 func Run(args []string) error {
 	return App.Run(args)
 }
