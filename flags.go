@@ -53,6 +53,10 @@ type (
 	FileFlag struct {
 		StringFlag
 	}
+
+	LevelFlag struct {
+		IntFlag
+	}
 )
 
 func (f F) NewInt(v int) *IntFlag { return &IntFlag{F: f, Value: v} }
@@ -71,6 +75,7 @@ func (f F) NewFile(v string) *FileFlag {
 	}
 	return ff
 }
+func (f F) NewLevel(v int) *LevelFlag { return &LevelFlag{IntFlag{F: f, Value: v}} }
 
 func (f *F) Base() *F          { return f }
 func (f *IntFlag) Base() *F    { return &f.F }
@@ -122,6 +127,13 @@ func (f *StringFlag) Parse(name, val string, rep bool) (bool, error) {
 	}
 	f.Value = val
 	return false, nil
+}
+func (f *LevelFlag) Parse(name, val string, rep bool) (bool, error) {
+	if val == "" {
+		f.Value = 1
+		return false, nil
+	}
+	return f.IntFlag.Parse(name, val, rep)
 }
 
 func (f F) VInt() int          { panic("wrong type") }

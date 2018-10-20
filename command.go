@@ -22,11 +22,12 @@ type (
 		Before   Action
 		After    Action
 		Complete Action
+		Hidden   bool
+
+		noMoreFlags bool
 
 		//	arg0 string
 		args Args
-
-		noMoreFlags bool
 
 		parent *Command
 	}
