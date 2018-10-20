@@ -66,11 +66,15 @@ func CompleteLast(args []string) (bool, string) {
 	return true, ""
 }
 
+func CompleteDefault(last string) error {
+	fmt.Fprintf(Writer, "compgen -o default \"%s\"", last)
+	return nil
+}
+
 func DefaultCommandComplete(c *Command) error {
 	pref := c.Args().Last()
-	if len(c.Commands) == 0 {
-		fmt.Fprintf(Writer, "compgen -o default \"%s\"", pref)
-		return nil
+	if len(c.Commands) == 0 && !strings.HasPrefix(pref, "-") {
+		return CompleteDefault(pref)
 	}
 
 	var names []string
