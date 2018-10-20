@@ -30,52 +30,70 @@ type (
 func (c *Command) Run(args []string) (err error) {
 	//	arg0 := args[0]
 
-	for args := args[1:]; len(args) > 0; {
+	for args := args[1:]; len(args) > NLastComplete; {
 		arg := args[0]
-		//	log.Printf("run arg: %v", arg)
+		//	log.Printf("run arg: %v %v", arg, NLastComplete)
 		switch {
-		case len(arg) > 1 && arg[0] == '-' && arg[1] != '-' && !c.noMoreFlags:
-			name, val := arg[1:2], arg[2:]
-			f := c.flag(name)
-			if f == nil {
-				return errors.New("no such flag: " + name)
-			}
-			args, err = f.Parse(name, val, args)
-			if err != nil {
-				return errors.Wrap(err, "flag "+f.Base().Name)
-			}
-		case strings.HasPrefix(arg, "--") && arg != "--" && !c.noMoreFlags:
-			name, val := arg[2:], ""
-			if p := strings.Index(name, "="); p != -1 {
-				val = name[p:]
-				name = name[:p]
-			}
-			f := c.flag(name)
-			if f == nil {
-				return errors.New("no such flag: " + name)
-			}
-			args, err = f.Parse(name, val, args)
-			if err != nil {
-				return errors.Wrap(err, "flag "+f.Base().Name)
-			}
+		case len(arg) > 1 && arg[0] == '-' && arg != "--" && !c.noMoreFlags:
+			args, err = c.parseFlag(args)
 		case arg == "--" && !c.noMoreFlags:
 			c.noMoreFlags = true
 			args = args[1:]
-		default:
-			if c.args == nil {
-				sub := c.sub(arg)
-				if sub != nil {
-					sub.parent = c
-					return sub.Run(args)
-				}
-				//	c.args = append(c.args, arg0)
+		case c.args == nil:
+			sub := c.sub(arg)
+			if sub != nil {
+				sub.parent = c
+				return sub.Run(args)
 			}
+			//	c.args = append(c.args, arg0)
+			fallthrough
+		default:
 			c.args = append(c.args, arg)
 			args = args[1:]
 		}
 	}
 
+	if ok, last := CompleteLast(args); ok {
+		c.args = append(c.args, last)
+		if c.Complete != nil {
+			return c.Complete(c)
+		}
+		return DefaultCommandComplete(c)
+	}
+
 	return c.Action(c)
+}
+
+func (c *Command) parseFlag(args []string) ([]string, error) {
+	var err error
+	arg := args[0]
+
+	var name, val string
+	if arg[1] != '-' {
+		name, val = arg[1:2], arg[2:]
+	} else {
+		name, val = arg[2:], ""
+		if p := strings.Index(name, "="); p != -1 {
+			val = name[p:]
+			name = name[:p]
+		}
+	}
+
+	f := c.flag(name)
+	if f == nil {
+		return nil, errors.New("no such flag: " + name)
+	}
+	args, err = f.Parse(name, val, args)
+	if err != nil {
+		return nil, errors.Wrap(err, "flag "+f.Base().Name)
+	}
+	if a := f.Base().After; a != nil {
+		if err = a(f); err != nil {
+			return nil, err
+		}
+	}
+
+	return args, nil
 }
 
 func (c *Command) Flag(n string) Flag {
