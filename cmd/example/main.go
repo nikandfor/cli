@@ -2,16 +2,21 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"compress/gzip"
 	crand "crypto/rand"
+	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/nikandfor/app"
+	"github.com/nikandfor/json"
 )
 
 var file *os.File
@@ -61,7 +66,17 @@ func main() {
 				app.F{Name: "crypto", Aliases: []string{"c"}}.NewBool(false),
 			},
 		},
+		{Name: "secret",
+			Hidden: true,
+			Action: secret,
+			Flags: []app.Flag{
+				&app.F{Name: "help", Aliases: []string{"h"}},
+			},
+		},
 	}
+
+	app.AddHelpCommandAndFlag()
+	app.EnableCompletion()
 
 	app.RunAndExit(os.Args)
 }
@@ -214,4 +229,35 @@ func open(c *app.Command) error {
 
 func close(c *app.Command) error {
 	return file.Close()
+}
+
+func secret(c *app.Command) error {
+	fmt.Printf("Congratulations!! You've found a secret!!\n")
+	data := `H4sIAJmyy1sAA6VUW46DMAz87yn8F5CS+h+31R4kkrnBXgD57OtHWEILaKWdqhElnvGMSbnBNfJy
+u9xHXP4jgJjxkl4ELgQQAeHcACtbi9TEmQQmUzizEHxGvnAx6EcV0hEdnB86GdOZiSpVfexjMJci
+YmsNG4wfIXIeA5ShohTumDo5X5lRwgDe9vrjDpRfWAG2Uawy1Vbl9+xSB0NSDA3w0hCx6bTgJ+8s
+NrtSnk90GBHg7sVzdM+tLxvL+SI14veNx3GBL7ugEnRv3T+9cC1JpI87wOzT1cpxVRobTQzMtXUO
+gVJ4P+yl+7piYztH0MlhPNM0aby6PaW90jePZAnW35uQ0vsoNZt03Xri4RH8FRo6R5vOPE1TE1io
+XTzgdaBkm9xI4UbnuPM4r0pQSeelwPdD5Tcryiq4B35cgJSYXKeDQnR3IaLU17bjUSzpTERdc7RX
+ATCFA0pN1RDRyU939yew+uX83eG7mpNyXSnDg+0mnRBSRm+qlnmbb2VtsvAxRZPKit0gZ6N9Yshv
+dWfQN8qf6vT0334AgRvI7AIGAAA=`
+	g, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		if e, ok := err.(base64.CorruptInputError); ok {
+			err = json.NewError([]byte(data), int(e), e)
+			fmt.Printf("%+100v", err)
+		}
+		return err
+	}
+	r, err := gzip.NewReader(bytes.NewReader(g))
+	if err != nil {
+		return err
+	}
+	s, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s", s)
+	return nil
 }
