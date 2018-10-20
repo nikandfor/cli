@@ -9,7 +9,7 @@ import (
 )
 
 type (
-	FlagAction func(f Flag) error
+	FlagAction func(f Flag, c *Command) error
 
 	Flag interface {
 		Base() *F
@@ -30,8 +30,9 @@ type (
 		Name     string
 		Aliases  []string
 		Hidden   bool
+		Before   FlagAction
 		After    FlagAction
-		Complete func(f Flag, last string) error
+		Complete func(f Flag, c *Command, last string) error
 	}
 
 	IntFlag struct {
@@ -61,12 +62,22 @@ func (f F) NewBool(v bool) *BoolFlag {
 func (f F) NewString(v string) *StringFlag {
 	return &StringFlag{F: f, Value: v}
 }
+func (f F) NewFile(v string) *FileFlag {
+	ff := &FileFlag{}
+	ff.F = f
+	ff.Value = v
+	if ff.Complete == nil {
+		ff.Complete = FileFlagCompleteFunc
+	}
+	return ff
+}
 
 func (f *F) Base() *F          { return f }
 func (f *IntFlag) Base() *F    { return &f.F }
 func (f *BoolFlag) Base() *F   { return &f.F }
 func (f *StringFlag) Base() *F { return &f.F }
 
+func (f *F) Parse(name, val string, rep bool) (bool, error) { return false, nil }
 func (f *IntFlag) Parse(name, val string, rep bool) (bool, error) {
 	if val == "" {
 		return true, nil

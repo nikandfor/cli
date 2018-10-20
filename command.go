@@ -6,6 +6,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+var ErrFlagExit = errors.New("flag exit")
+var ErrNoSuchCommand = errors.New("no such command found")
+
 type (
 	Args   []string
 	Action func(c *Command) error
@@ -16,6 +19,8 @@ type (
 		Action   Action
 		Commands []*Command
 		Flags    []Flag
+		Before   Action
+		After    Action
 		Complete Action
 
 		//	arg0 string
@@ -29,19 +34,20 @@ type (
 
 func (c *Command) Run(args []string) (err error) {
 	//	arg0 := args[0]
+	defer func() {
+		if err == ErrFlagExit {
+			err = nil
+		}
+	}()
 
 	for args := args[1:]; len(args) > NLastComplete; {
 		arg := args[0]
 		//	log.Printf("run arg: %v %v", arg, NLastComplete)
 		switch {
 		case len(arg) > 1 && arg[0] == '-' && arg != "--" && !c.noMoreFlags:
-			var ok bool
-			args, ok, err = c.parseFlag(args)
+			args, err = c.parseFlag(args)
 			if err != nil {
 				return err
-			}
-			if !ok {
-				return nil
 			}
 		case arg == "--" && !c.noMoreFlags:
 			c.noMoreFlags = true
@@ -68,10 +74,31 @@ func (c *Command) Run(args []string) (err error) {
 		return DefaultCommandComplete(c)
 	}
 
+	if c.Before != nil {
+		if err := c.Before(c); err != nil {
+			return err
+		}
+	}
+	defer func() {
+		if c.After != nil {
+			if e := c.After(c); err == nil {
+				err = e
+			}
+		}
+	}()
+
+	if c.Action == nil {
+		err := DefaultHelpAction(c)
+		if err != nil {
+			return err
+		}
+		return ErrNoSuchCommand
+	}
+
 	return c.Action(c)
 }
 
-func (c *Command) parseFlag(args []string) ([]string, bool, error) {
+func (c *Command) parseFlag(args []string) ([]string, error) {
 	var err error
 	arg, args := Pop(args)
 
@@ -88,14 +115,20 @@ func (c *Command) parseFlag(args []string) ([]string, bool, error) {
 
 	f := c.flag(name)
 	if f == nil {
-		return nil, false, errors.New("no such flag: " + name)
+		return nil, errors.New("no such flag: " + name)
+	}
+
+	if a := f.Base().Before; a != nil {
+		if err = a(f, c); err != nil {
+			return nil, err
+		}
 	}
 
 	var rep bool
 	for {
 		more, err := f.Parse(name, val, rep)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 
 		if !more {
@@ -109,24 +142,28 @@ func (c *Command) parseFlag(args []string) ([]string, bool, error) {
 		}
 
 		if ok, last := CompleteLast(args); ok {
-			if c := f.Base().Complete; c != nil {
-				return nil, false, c(f, last)
+			if comp := f.Base().Complete; comp != nil {
+				err = comp(f, c, last)
+				if err != nil {
+					return nil, err
+				}
+				return nil, ErrFlagExit
 			} else {
 				// default completion is not provided
-				return nil, false, nil
+				return nil, ErrFlagExit
 			}
 		}
 
-		return nil, false, errors.New("arguments expected")
+		return nil, errors.New("arguments expected")
 	}
 
 	if a := f.Base().After; a != nil {
-		if err = a(f); err != nil {
-			return nil, false, err
+		if err = a(f, c); err != nil {
+			return nil, err
 		}
 	}
 
-	return args, true, nil
+	return args, nil
 }
 
 func (c *Command) Flag(n string) Flag {

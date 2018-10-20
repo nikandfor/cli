@@ -42,7 +42,7 @@ func AddCompletionToApp(app *Command) {
 	)
 }
 
-func CheckCompletionAction(f Flag) error {
+func CheckCompletionAction(f Flag, _ *Command) error {
 	if !CompleteBash.Value {
 		return nil
 	}
@@ -126,5 +126,10 @@ func DefaultCommandComplete(c *Command) error {
 
 	fmt.Fprintf(Writer, `compgen -W "%s"`, strings.Join(names, " "))
 
+	return nil
+}
+
+func FileFlagCompleteFunc(f Flag, _ *Command, last string) error {
+	fmt.Fprintf(Writer, `compgen -o default "%s"`, last)
 	return nil
 }

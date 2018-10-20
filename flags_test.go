@@ -6,6 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func init() {
+	var _ FlagDev = &F{}
+}
+
 func TestFlagsNew(t *testing.T) {
 	fbase := F{Name: "name", Aliases: []string{"flag", "n", "f"}}
 
