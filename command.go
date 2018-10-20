@@ -35,7 +35,14 @@ func (c *Command) Run(args []string) (err error) {
 		//	log.Printf("run arg: %v %v", arg, NLastComplete)
 		switch {
 		case len(arg) > 1 && arg[0] == '-' && arg != "--" && !c.noMoreFlags:
-			args, err = c.parseFlag(args)
+			var ok bool
+			args, ok, err = c.parseFlag(args)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return nil
+			}
 		case arg == "--" && !c.noMoreFlags:
 			c.noMoreFlags = true
 			args = args[1:]
@@ -64,7 +71,7 @@ func (c *Command) Run(args []string) (err error) {
 	return c.Action(c)
 }
 
-func (c *Command) parseFlag(args []string) ([]string, error) {
+func (c *Command) parseFlag(args []string) ([]string, bool, error) {
 	var err error
 	arg, args := Pop(args)
 
@@ -81,32 +88,45 @@ func (c *Command) parseFlag(args []string) ([]string, error) {
 
 	f := c.flag(name)
 	if f == nil {
-		return nil, errors.New("no such flag: " + name)
+		return nil, false, errors.New("no such flag: " + name)
 	}
 
-	var repeat bool
+	var rep bool
 	for {
-		more, err := f.Parse(name, val, repeat)
+		more, err := f.Parse(name, val, rep)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
+
 		if !more {
-			repeat = true
 			break
 		}
-		if len(args) == 0 {
-			return nil, errors.New("arguments expected")
+
+		if len(args) > NLastComplete {
+			val, args = Pop(args)
+			rep = true
+			continue
 		}
-		val, args = Pop(args)
+
+		if ok, last := CompleteLast(args); ok {
+			if c := f.Base().Complete; c != nil {
+				return nil, false, c(f, last)
+			} else {
+				// default completion is not provided
+				return nil, false, nil
+			}
+		}
+
+		return nil, false, errors.New("arguments expected")
 	}
 
 	if a := f.Base().After; a != nil {
 		if err = a(f); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 	}
 
-	return args, nil
+	return args, true, nil
 }
 
 func (c *Command) Flag(n string) Flag {

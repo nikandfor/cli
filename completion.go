@@ -47,7 +47,7 @@ func CheckCompletionAction(f Flag) error {
 		return nil
 	}
 	Complete = CompleteBash.Value
-	if CompleteWord.Value == len(strings.Fields(CompleteLine.Value)) {
+	if CompleteWord.Value == len(strings.Fields(CompleteLine.Value))-1 {
 		NLastComplete = 1
 		return nil
 	}
@@ -59,7 +59,7 @@ func CompleteLast(args []string) (bool, string) {
 	if !CompleteBash.Value {
 		return false, ""
 	}
-	if CompleteWord.Value == len(strings.Fields(CompleteLine.Value)) {
+	if CompleteWord.Value == len(strings.Fields(CompleteLine.Value))-1 {
 		return true, args[len(args)-1]
 	}
 

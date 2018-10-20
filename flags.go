@@ -31,7 +31,7 @@ type (
 		Aliases  []string
 		Hidden   bool
 		After    FlagAction
-		Complete FlagAction
+		Complete func(f Flag, last string) error
 	}
 
 	IntFlag struct {
