@@ -9,6 +9,8 @@ import (
 )
 
 type (
+	FlagAction func(f Flag) error
+
 	Flag interface {
 		Base() *F
 
@@ -28,6 +30,7 @@ type (
 		Name    string
 		Aliases []string
 		Hidden  bool
+		After   FlagAction
 	}
 
 	IntFlag struct {
