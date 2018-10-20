@@ -23,14 +23,15 @@ type (
 	FlagDev interface {
 		Flag
 
-		Parse(arg, val string, args []string) ([]string, error)
+		Parse(arg, val string, rep bool) (bool, error)
 	}
 
 	F struct {
-		Name    string
-		Aliases []string
-		Hidden  bool
-		After   FlagAction
+		Name     string
+		Aliases  []string
+		Hidden   bool
+		After    FlagAction
+		Complete FlagAction
 	}
 
 	IntFlag struct {
@@ -47,6 +48,10 @@ type (
 		F
 		Value string
 	}
+
+	FileFlag struct {
+		StringFlag
+	}
 )
 
 func (f F) NewInt(v int) *IntFlag { return &IntFlag{F: f, Value: v} }
@@ -62,62 +67,50 @@ func (f *IntFlag) Base() *F    { return &f.F }
 func (f *BoolFlag) Base() *F   { return &f.F }
 func (f *StringFlag) Base() *F { return &f.F }
 
-func (f *IntFlag) Parse(name, val string, args []string) ([]string, error) {
+func (f *IntFlag) Parse(name, val string, rep bool) (bool, error) {
 	if val == "" {
-		if len(args) < 2 {
-			return nil, errors.New("argument expected")
-		}
-		val = args[1]
-		args = args[1:]
-		if val == "" {
-			return nil, errors.New("argument int expected")
-		}
-	} else {
+		return true, nil
+	}
+	if !rep && val[0] == '=' {
 		val = val[1:]
 	}
 
 	q, err := strconv.Atoi(val)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 	f.Value = q
-	return args[1:], nil
-}
-func (f *BoolFlag) Parse(name, val string, args []string) ([]string, error) {
-	switch {
-	case val == "":
-		f.Value = true
-		return args[1:], nil
-	case val[0] == '=':
-		val = val[1:] // remove '='
-		switch strings.ToLower(val) {
-		case "t", "y", "1", "true", "yes":
-			f.Value = true
-		case "f", "n", "0", "false", "no":
-			f.Value = false
-		default:
-			return nil, errors.New("expected bool value")
-		}
-		return args[1:], nil
-	default:
-		f.Value = true
-		args[0] = "-" + val
-		return args, nil
-	}
-}
-func (f *StringFlag) Parse(name, val string, args []string) (args_ []string, _ error) {
-	if val == "" {
-		if len(args) < 2 {
-			return nil, errors.New("argument expected")
-		}
-		val = args[1]
-		args = args[1:]
-	} else {
-		val = val[1:] // remove '='
-	}
 
+	return false, nil
+}
+func (f *BoolFlag) Parse(name, val string, _ bool) (bool, error) {
+	if val == "" {
+		f.Value = true
+		return false, nil
+	}
+	if val[0] == '=' {
+		val = val[1:]
+	}
+	switch strings.ToLower(val) {
+	case "t", "y", "1", "true", "yes":
+		f.Value = true
+	case "f", "n", "0", "false", "no":
+		f.Value = false
+	default:
+		return false, errors.New("expected bool value")
+	}
+	return false, nil
+
+}
+func (f *StringFlag) Parse(name, val string, rep bool) (bool, error) {
+	if val == "" {
+		return true, nil
+	}
+	if !rep && val[0] == '=' {
+		val = val[1:]
+	}
 	f.Value = val
-	return args[1:], nil
+	return false, nil
 }
 
 func (f F) VInt() int          { panic("wrong type") }

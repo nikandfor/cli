@@ -66,7 +66,7 @@ func (c *Command) Run(args []string) (err error) {
 
 func (c *Command) parseFlag(args []string) ([]string, error) {
 	var err error
-	arg := args[0]
+	arg, args := Pop(args)
 
 	var name, val string
 	if arg[1] != '-' {
@@ -83,10 +83,23 @@ func (c *Command) parseFlag(args []string) ([]string, error) {
 	if f == nil {
 		return nil, errors.New("no such flag: " + name)
 	}
-	args, err = f.Parse(name, val, args)
-	if err != nil {
-		return nil, errors.Wrap(err, "flag "+f.Base().Name)
+
+	var repeat bool
+	for {
+		more, err := f.Parse(name, val, repeat)
+		if err != nil {
+			return nil, err
+		}
+		if !more {
+			repeat = true
+			break
+		}
+		if len(args) == 0 {
+			return nil, errors.New("arguments expected")
+		}
+		val, args = Pop(args)
 	}
+
 	if a := f.Base().After; a != nil {
 		if err = a(f); err != nil {
 			return nil, err
@@ -160,4 +173,8 @@ func (c *Command) sub(n string) *Command {
 		}
 	}
 	return nil
+}
+
+func Pop(args []string) (string, []string) {
+	return args[0], args[1:]
 }
