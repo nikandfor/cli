@@ -21,13 +21,16 @@ var (
 		},
 	}
 
-	HelpFlag       = &F{Name: "help", Aliases: []string{"h"}, After: DefaultHelpFlagAction}
+	HelpFlag = &F{Name: "help", Aliases: []string{"h"},
+		After:       DefaultHelpFlagAction,
+		Description: "shows this message"}
 	HelpHiddenFlag = F{Name: "hidden", Aliases: []string{"h"}, Hidden: true}.NewLevel(0)
 
 	HelpCommand = &Command{
-		Name:   "help",
-		Action: HelpAction,
-		Flags:  []Flag{HelpHiddenFlag},
+		Name:        "help",
+		Action:      HelpAction,
+		Description: "shows this message",
+		Flags:       []Flag{HelpHiddenFlag},
 	}
 )
 
@@ -64,16 +67,24 @@ func DefaultHelpFlagAction(f Flag, c *Command) error {
 	return err
 }
 
-func DefaultHelpAction(c *Command) error {
+var DefaultHelpAction = func(c *Command) error {
 	if Complete {
 		return nil
 	}
+	if c.Help != nil {
+		return c.Help(c)
+	}
+
 	l := HelpHiddenFlag.VInt()
 
 	if len(c.Commands) == 0 {
 		fmt.Fprintf(Writer, "usage: %s [OPTION...] [ARGS...]\n", c.Name)
 	} else {
 		fmt.Fprintf(Writer, "usage: %s [OPTION...] [COMMAND...]\n", c.Name)
+	}
+
+	if c.Description != "" {
+		fmt.Fprintf(Writer, "  %s\n", c.Description)
 	}
 
 	if len(c.Commands) != 0 {
@@ -85,7 +96,7 @@ func DefaultHelpAction(c *Command) error {
 			if c.Name[0] == '_' && l < 2 {
 				continue
 			}
-			fmt.Fprintf(Writer, "  %s %s\n", c.Name, c.Aliases)
+			fmt.Fprintf(Writer, "  %10s %-10s - %s\n", c.Name, fmt.Sprintf("%s", c.Aliases), c.Description)
 		}
 	}
 
@@ -99,7 +110,7 @@ func DefaultHelpAction(c *Command) error {
 			if b.Name[0] == '_' && l < 2 {
 				continue
 			}
-			fmt.Fprintf(Writer, "  %s %s %T (default %v)\n", b.Name, b.Aliases, f, f.VAny())
+			fmt.Fprintf(Writer, "  %10s %s %s - %s (default %v)\n", b.Name, b.Aliases, f.Type(), f.Base().Description, f.VAny())
 		}
 	}
 
@@ -107,8 +118,9 @@ func DefaultHelpAction(c *Command) error {
 }
 
 func HelpAction(c *Command) error {
-	for ; c != nil && c.parent != nil; c = c.parent {
+	for c != nil && c.parent != nil {
 		// we need to go deeper
+		c = c.parent
 	}
 	if c == nil {
 		return errors.New("help for nil")

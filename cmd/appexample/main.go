@@ -23,42 +23,50 @@ var file *os.File
 
 func main() {
 	app.App.Action = app.DefaultHelpAction
+	app.App.Description = "This is an example application that shows opportunities you can have using this library"
 	app.App.Commands = []*app.Command{
 		{Name: "greeting",
-			Action: hello,
-			Before: open,
-			After:  close,
+			Action:      hello,
+			Before:      open,
+			After:       close,
+			Description: "Greets you with one of saved greeting. Or allows edit greetings by subcommands",
 			Commands: []*app.Command{
 				{Name: "new",
-					Aliases: []string{"add"},
-					Action:  new,
-					Before:  open,
-					After:   close,
+					Aliases:     []string{"add"},
+					Action:      new,
+					Before:      open,
+					After:       close,
+					Description: "Saves new greeting into the storage file",
 				},
 				{Name: "hello",
-					Aliases: []string{"hi"},
-					Action:  hello,
-					Before:  open,
-					After:   close,
+					Aliases:     []string{"hi"},
+					Action:      hello,
+					Before:      open,
+					After:       close,
+					Description: "Greets you with one of saved greeting",
 				},
 				{Name: "all",
-					Aliases: []string{"dump"},
-					Action:  all,
-					Before:  open,
-					After:   close,
+					Aliases:     []string{"dump"},
+					Action:      all,
+					Before:      open,
+					After:       close,
+					Description: "Prints all saved greeting",
 				},
 				{Name: "clean",
-					Aliases: []string{"drop"},
-					Action:  clean,
+					Aliases:     []string{"drop"},
+					Action:      clean,
+					Description: "Cleans all saved greeting",
 				},
 			},
 			Flags: []app.Flag{
-				app.F{Name: "file"}.NewFile("greetings.txt"), // it's the same as StringFlag but has Completion
-				app.F{Name: "name"}.NewString(""),
+				app.F{Name: "file", Description: "file to store greetings at"}.NewFile("greetings.txt"), // it's the same as StringFlag but has Completion
+				app.F{Name: "name", Description: "your name to greet you"}.NewString("world"),
 			},
 		},
 		{Name: "random",
-			Action: random,
+			Action:      random,
+			Aliases:     []string{"rnd"},
+			Description: "Generates random number",
 			Flags: []app.Flag{
 				app.F{Name: "min", Aliases: []string{"m"}}.NewInt(0),
 				app.F{Name: "max", Aliases: []string{"M"}}.NewInt(100),
@@ -67,8 +75,9 @@ func main() {
 			Completion: app.NoArgumentsExpectedCompletion,
 		},
 		{Name: "secret",
-			Hidden: true,
-			Action: secret,
+			Hidden:      true,
+			Action:      secret,
+			Description: "Shows you a secret",
 			Flags: []app.Flag{
 				// *F could be used as flag without any value
 				// Here it's used to shadow and disable any actions of parent flags with the same names
@@ -78,8 +87,9 @@ func main() {
 			Completion: app.NoArgumentsExpectedCompletion,
 		},
 		{Name: "choose",
-			Action:     choose,
-			Completion: choosecomp},
+			Action:      choose,
+			Description: "Gives you a choice",
+			Completion:  choosecomp},
 	}
 
 	app.AddHelpCommandAndFlag()

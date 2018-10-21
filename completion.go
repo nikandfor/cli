@@ -98,7 +98,7 @@ func DefaultBashCompletion(last string) error {
 	return nil
 }
 
-func DefaultCommandCompletion(c *Command) error {
+var DefaultCommandCompletion = func(c *Command) error {
 	pref := c.Args().Last()
 	if len(c.Commands) == 0 && !strings.HasPrefix(pref, "-") {
 		return DefaultBashCompletion(pref)
@@ -162,7 +162,7 @@ func DefaultCommandCompletion(c *Command) error {
 	return nil
 }
 
-func DefaultFlagCompletion(f Flag, c *Command, last string) error {
+var DefaultFlagCompletion = func(f Flag, c *Command, last string) error {
 	switch f.(type) {
 	case *FileFlag:
 		fmt.Fprintf(Writer, `_longopt`)
@@ -178,6 +178,8 @@ func DefaultFlagCompletion(f Flag, c *Command, last string) error {
 		tp := ""
 		switch f.(type) {
 		case *StringFlag:
+			tp = "string"
+		case *StringSliceFlag:
 			tp = "string"
 		case *IntFlag:
 			tp = "int"

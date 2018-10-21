@@ -14,15 +14,18 @@ type (
 	Action func(c *Command) error
 
 	Command struct {
-		Name       string
-		Aliases    []string
-		Action     Action
-		Commands   []*Command
-		Flags      []Flag
-		Before     Action
-		After      Action
-		Completion Action
-		Hidden     bool
+		Name        string
+		Aliases     []string
+		Action      Action
+		Description string
+		Commands    []*Command
+		Flags       []Flag
+		Before      Action
+		After       Action
+		Completion  Action
+		Help        Action
+		Error       func(c *Command, err error) error
+		Hidden      bool
 
 		noMoreFlags bool
 
@@ -38,6 +41,9 @@ func (c *Command) Run(args []string) (err error) {
 	defer func() {
 		if err == ErrFlagExit {
 			err = nil
+		}
+		if err != nil && c.Error != nil {
+			err = c.Error(c, err)
 		}
 	}()
 
@@ -89,6 +95,12 @@ func (c *Command) Run(args []string) (err error) {
 	}()
 
 	if c.Action == nil {
+		if a := c.Help; a != nil {
+			return a(c)
+		}
+		if DefaultHelpAction == nil {
+			return ErrNoSuchCommand
+		}
 		err := DefaultHelpAction(c)
 		if err != nil {
 			return err
@@ -182,6 +194,8 @@ func (c *Command) Flag(n string) Flag {
 	}
 	return nil
 }
+
+func (c *Command) Parent() *Command { return c.parent }
 
 func (c *Command) Args() Args { return c.args }
 
