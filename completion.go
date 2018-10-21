@@ -10,8 +10,9 @@ import (
 var CompletionScript = `
 # %[1]s bash completion function
 _%[1]s_complete() {
-	cmd=$(${COMP_WORDS[0]} --_comp-bash --_comp-word ${COMP_CWORD} --_comp-point ${COMP_POINT} --_comp-line "${COMP_LINE}" "${COMP_WORDS[@]:1:$COMP_CWORD}")
-	eval $cmd
+	local base=$1 cur=$2 prev=$3
+	cmd=$(${base} --_comp-bash --_comp-word ${COMP_CWORD} --_comp-point ${COMP_POINT} --_comp-line "${COMP_LINE}" "${COMP_WORDS[@]:1:$COMP_CWORD}")
+	eval "$cmd"
 }
 
 complete -F _%[1]s_complete %[1]s
@@ -77,8 +78,19 @@ func CompleteLast(args []string) (bool, string) {
 }
 
 func NoArgumentsExpectedCompletion(c *Command) error {
-	fmt.Fprintf(Writer, `COMPREPLY=(%s); compopt -o nosort`, "no arguments expected")
+	fmt.Fprintf(Writer, `COMPREPLY=("%s" " "); compopt -o nosort`, "no arguments expected")
 	return nil
+}
+
+func AlternativeCompletion(list []string) Action {
+	return func(c *Command) error {
+		fmt.Printf(`mapfile -t COMPREPLY < <(grep "^$cur" <<EOF
+%s
+EOF
+)
+[ ${#COMPREPLY[@]} -eq 1 ] && { a="${COMPREPLY[0]}"; [[ "$a" =~ " " ]] && COMPREPLY[0]=$(printf '"%%s"' "$a"); }`, strings.Join(list, "\n"))
+		return nil
+	}
 }
 
 func DefaultBashCompletion(last string) error {

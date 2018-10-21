@@ -11,8 +11,19 @@ _dot_completions() {
 #		COMPREPLY="$cur"
 #	fi
 #	_longopt
-	echo "$@"
-	echo qwe
+	local base=$1 cur=$2 prev=$3
+#	COMPREPLY="base[$base] cur[$cur] prev[$prev]"
+#	compopt -o nosort
+	mapfile -t COMPREPLY < <(grep "^$cur" <<EOF
+first word
+second longer phrase
+and last line here
+EOF
+)
+	if [ ${#COMPREPLY[@]} -eq 1 ]; then
+		a="${COMPREPLY[0]}"
+		[[ "$a" =~ " " ]] && COMPREPLY[0]=`printf '"%s"' "$a"`
+	fi
 }
 
 complete -F _dot_completions dot

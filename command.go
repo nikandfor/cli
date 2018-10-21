@@ -185,6 +185,8 @@ func (c *Command) Flag(n string) Flag {
 
 func (c *Command) Args() Args { return c.args }
 
+func (a Args) Len() int { return len(a) }
+
 func (a Args) First() string {
 	if len(a) == 0 {
 		return ""

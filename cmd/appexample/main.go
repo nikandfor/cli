@@ -77,12 +77,49 @@ func main() {
 			},
 			Completion: app.NoArgumentsExpectedCompletion,
 		},
+		{Name: "choose",
+			Action:     choose,
+			Completion: choosecomp},
 	}
 
 	app.AddHelpCommandAndFlag()
 	app.EnableCompletion()
 
 	app.RunAndExit(os.Args)
+}
+
+var choices = []string{"apple", "orange", "box of candies"}
+var plurals = []string{"apples", "oranges", "boxes of candies"}
+
+func choosecomp(c *app.Command) error {
+	if c.Args().Len() == 1 {
+		return app.AlternativeCompletion(choices)(c)
+	} else {
+		return app.NoArgumentsExpectedCompletion(c)
+	}
+}
+
+func choose(c *app.Command) error {
+	arg := c.Args().First()
+	if arg == "" {
+		fmt.Printf("choose something\n")
+		return nil
+	}
+
+	if arg == "left" {
+		fmt.Printf("Have a good day!\n")
+		return nil
+	}
+
+	for i, ch := range choices {
+		if arg == ch {
+			fmt.Printf("Oh! Sorry, there is no more %s\n", plurals[i])
+			return nil
+		}
+	}
+
+	fmt.Printf("Sorry, we don't have %s\n", arg)
+	return nil
 }
 
 func random(c *app.Command) error {
