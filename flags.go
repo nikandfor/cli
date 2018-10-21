@@ -14,6 +14,8 @@ type (
 	Flag interface {
 		Base() *F
 
+		Type() string
+
 		VString() string
 		VInt() int
 		VBool() bool
@@ -32,6 +34,7 @@ type (
 		Hidden         bool
 		Before         FlagAction
 		After          FlagAction
+		Description    string
 		Completion     func(f Flag, c *Command, last string) error
 		CompletionHelp string
 	}
@@ -58,6 +61,11 @@ type (
 	LevelFlag struct {
 		IntFlag
 	}
+
+	StringSliceFlag struct {
+		F
+		Value []string
+	}
 )
 
 func (f F) NewInt(v int) *IntFlag { return &IntFlag{F: f, Value: v} }
@@ -70,12 +78,22 @@ func (f F) NewString(v string) *StringFlag {
 func (f F) NewFile(v string) *FileFlag {
 	return &FileFlag{StringFlag{F: f, Value: v}}
 }
-func (f F) NewLevel(v int) *LevelFlag { return &LevelFlag{IntFlag{F: f, Value: v}} }
+func (f F) NewLevel(v int) *LevelFlag                  { return &LevelFlag{IntFlag{F: f, Value: v}} }
+func (f F) NewStringSlice(v []string) *StringSliceFlag { return &StringSliceFlag{F: f, Value: v} }
 
-func (f *F) Base() *F          { return f }
-func (f *IntFlag) Base() *F    { return &f.F }
-func (f *BoolFlag) Base() *F   { return &f.F }
-func (f *StringFlag) Base() *F { return &f.F }
+func (f *F) Base() *F               { return f }
+func (f *IntFlag) Base() *F         { return &f.F }
+func (f *BoolFlag) Base() *F        { return &f.F }
+func (f *StringFlag) Base() *F      { return &f.F }
+func (f *StringSliceFlag) Base() *F { return &f.F }
+
+func (f *F) Type() string               { return "" }
+func (f *IntFlag) Type() string         { return "int" }
+func (f *BoolFlag) Type() string        { return "bool" }
+func (f *StringFlag) Type() string      { return "string" }
+func (f *FileFlag) Type() string        { return "file" }
+func (f *LevelFlag) Type() string       { return "level" }
+func (f *StringSliceFlag) Type() string { return "string slice" }
 
 func (f *F) Parse(name, val string, rep bool) (bool, error) { return false, nil }
 func (f *IntFlag) Parse(name, val string, rep bool) (bool, error) {
@@ -130,6 +148,16 @@ func (f *LevelFlag) Parse(name, val string, rep bool) (bool, error) {
 	}
 	return f.IntFlag.Parse(name, val, rep)
 }
+func (f *StringSliceFlag) Parse(name, val string, rep bool) (bool, error) {
+	if val == "" && !rep {
+		return true, nil
+	}
+	if !rep && val[0] == '=' {
+		val = val[1:]
+	}
+	f.Value = append(f.Value, val)
+	return false, nil
+}
 
 func (f F) VInt() int          { panic("wrong type") }
 func (f F) VBool() bool        { panic("wrong type") }
@@ -142,7 +170,8 @@ func (f *IntFlag) VInt() int          { return f.Value }
 func (f *BoolFlag) VBool() bool       { return f.Value }
 func (f *StringFlag) VString() string { return f.Value }
 
-func (f *F) VAny() interface{}          { return nil }
-func (f *IntFlag) VAny() interface{}    { return f.Value }
-func (f *BoolFlag) VAny() interface{}   { return f.Value }
-func (f *StringFlag) VAny() interface{} { return f.Value }
+func (f *F) VAny() interface{}               { return nil }
+func (f *IntFlag) VAny() interface{}         { return f.Value }
+func (f *BoolFlag) VAny() interface{}        { return f.Value }
+func (f *StringFlag) VAny() interface{}      { return f.Value }
+func (f *StringSliceFlag) VAny() interface{} { return f.Value }

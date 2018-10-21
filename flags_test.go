@@ -79,3 +79,49 @@ func TestFlagsParseBool(t *testing.T) {
 	assert.False(t, more)
 	assert.Equal(t, true, f.VAny())
 }
+
+func TestFlagsSliceString(t *testing.T) {
+	fu := F{Name: "list", Aliases: []string{"l"}}.NewStringSlice(nil)
+
+	var f FlagDev = fu
+
+	more, err := f.Parse("list", "", false)
+	assert.NoError(t, err)
+	assert.True(t, more)
+	assert.Equal(t, []string(nil), f.VAny())
+
+	fu.Value = nil
+	more, err = f.Parse("list", "=value", false)
+	assert.NoError(t, err)
+	assert.False(t, more)
+	assert.Equal(t, []string{"value"}, f.VAny())
+
+	fu.Value = nil
+	more, err = f.Parse("list", "=value", true)
+	assert.NoError(t, err)
+	assert.False(t, more)
+	assert.Equal(t, []string{"=value"}, f.VAny())
+
+	fu.Value = nil
+	more, err = f.Parse("l", "=value", false)
+	assert.NoError(t, err)
+	assert.False(t, more)
+	assert.Equal(t, []string{"value"}, f.VAny())
+
+	fu.Value = nil
+	more, err = f.Parse("l", "=value", true)
+	assert.NoError(t, err)
+	assert.False(t, more)
+	assert.Equal(t, []string{"=value"}, f.VAny())
+
+	fu.Value = nil
+	more, err = f.Parse("l", "value", false)
+	assert.NoError(t, err)
+	assert.False(t, more)
+	assert.Equal(t, []string{"value"}, f.VAny())
+
+	more, err = f.Parse("l", "val2", false)
+	assert.NoError(t, err)
+	assert.False(t, more)
+	assert.Equal(t, []string{"value", "val2"}, f.VAny())
+}
