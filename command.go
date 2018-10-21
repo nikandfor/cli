@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -43,7 +44,7 @@ func (c *Command) Run(args []string) (err error) {
 
 	for args := args[1:]; len(args) > NLastComplete; {
 		arg := args[0]
-		//	log.Printf("run arg: %v %v", arg, NLastComplete)
+		fmt.Fprintf(&debug, "run arg: %v %v\n", arg, NLastComplete)
 		switch {
 		case len(arg) > 1 && arg[0] == '-' && arg != "--" && !c.noMoreFlags:
 			args, err = c.parseFlag(args)

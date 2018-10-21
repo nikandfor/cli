@@ -65,6 +65,9 @@ func DefaultHelpFlagAction(f Flag, c *Command) error {
 }
 
 func DefaultHelpAction(c *Command) error {
+	if Complete {
+		return nil
+	}
 	l := HelpHiddenFlag.VInt()
 
 	if len(c.Commands) == 0 {
