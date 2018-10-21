@@ -67,7 +67,7 @@ func (c *Command) Run(args []string) (err error) {
 		}
 	}
 
-	if ok, last := CompleteLast(args); ok {
+	if ok, last := CompletionLast(args); ok {
 		c.args = append(c.args, last)
 		if c.Completion != nil {
 			return c.Completion(c)
@@ -142,7 +142,7 @@ func (c *Command) parseFlag(args []string) ([]string, error) {
 			continue
 		}
 
-		if ok, last := CompleteLast(args); ok {
+		if ok, last := CompletionLast(args); ok {
 			if comp := f.Base().Completion; comp != nil {
 				err = comp(f, c, last)
 			} else {

@@ -70,7 +70,7 @@ func CheckCompletionAction(f Flag, _ *Command) error {
 	return nil
 }
 
-func CompleteLast(args []string) (bool, string) {
+func CompletionLast(args []string) (bool, string) {
 	if !CompleteBash.Value {
 		return false, ""
 	}
