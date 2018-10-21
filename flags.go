@@ -27,12 +27,13 @@ type (
 	}
 
 	F struct {
-		Name     string
-		Aliases  []string
-		Hidden   bool
-		Before   FlagAction
-		After    FlagAction
-		Complete func(f Flag, c *Command, last string) error
+		Name           string
+		Aliases        []string
+		Hidden         bool
+		Before         FlagAction
+		After          FlagAction
+		Complete       func(f Flag, c *Command, last string) error
+		CompletionHelp string
 	}
 
 	IntFlag struct {
@@ -67,13 +68,7 @@ func (f F) NewString(v string) *StringFlag {
 	return &StringFlag{F: f, Value: v}
 }
 func (f F) NewFile(v string) *FileFlag {
-	ff := &FileFlag{}
-	ff.F = f
-	ff.Value = v
-	if ff.Complete == nil {
-		ff.Complete = FileFlagCompleteFunc
-	}
-	return ff
+	return &FileFlag{StringFlag{F: f, Value: v}}
 }
 func (f F) NewLevel(v int) *LevelFlag { return &LevelFlag{IntFlag{F: f, Value: v}} }
 

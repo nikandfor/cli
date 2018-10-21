@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -44,7 +43,7 @@ func (c *Command) Run(args []string) (err error) {
 
 	for args := args[1:]; len(args) > NLastComplete; {
 		arg := args[0]
-		fmt.Fprintf(&debug, "run arg: %v %v\n", arg, NLastComplete)
+		//	log.Printf("run arg: %v %v\n", arg, NLastComplete)
 		switch {
 		case len(arg) > 1 && arg[0] == '-' && arg != "--" && !c.noMoreFlags:
 			args, err = c.parseFlag(args)
@@ -146,17 +145,16 @@ func (c *Command) parseFlag(args []string) ([]string, error) {
 		if ok, last := CompleteLast(args); ok {
 			if comp := f.Base().Complete; comp != nil {
 				err = comp(f, c, last)
-				if err != nil {
-					return nil, err
-				}
-				return nil, ErrFlagExit
 			} else {
-				// default completion is not provided
-				return nil, ErrFlagExit
+				err = DefaultFlagCompletion(f, c, last)
 			}
+			if err != nil {
+				return nil, err
+			}
+			return nil, ErrFlagExit
 		}
 
-		return nil, errors.New("arguments expected")
+		return nil, errors.New("argument expected")
 	}
 
 	if a := f.Base().After; a != nil {

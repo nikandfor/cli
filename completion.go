@@ -1,10 +1,7 @@
 package app
 
 import (
-	"bytes"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -14,10 +11,7 @@ var CompletionScript = `
 # %[1]s bash completion function
 _%[1]s_complete() {
 	cmd=$(${COMP_WORDS[0]} --_comp-bash --_comp-word ${COMP_CWORD} --_comp-point ${COMP_POINT} --_comp-line "${COMP_LINE}" "${COMP_WORDS[@]:1:$COMP_CWORD}")
-	echo $cmd >comp-debug2
 	eval $cmd
-	#COMPREPLY=($(eval $cmd))
-	echo ${COMPREPLY[@]} >>comp-debug2
 }
 
 complete -F _%[1]s_complete %[1]s
@@ -83,26 +77,11 @@ func CompleteLast(args []string) (bool, string) {
 }
 
 func CompleteDefault(last string) error {
-	fmt.Fprintf(Writer, "COMPREPLY=($(compgen -o default \"%s\"))", last)
+	fmt.Fprintf(Writer, "_longopt")
 	return nil
 }
 
-var debug bytes.Buffer
-
 func DefaultCommandComplete(c *Command) error {
-	defer func() {
-		_ = ioutil.WriteFile("comp-debug", debug.Bytes(), 0644)
-	}()
-
-	fmt.Fprintf(&debug, "%q\n", os.Args)
-	fmt.Fprintf(&debug, "command: %s\n", c.Name)
-	fmt.Fprintf(&debug, "NLastComplete: %d\n", NLastComplete)
-	char := ">>>"
-	if CompletePoint.Value < len(CompleteLine.Value) {
-		char = fmt.Sprintf("'%c'", CompleteLine.Value[CompletePoint.Value])
-	}
-	fmt.Fprintf(&debug, "complete word %v pos %d %v line %q last %q\n", CompleteWord.Value, CompletePoint.Value, char, CompleteLine.Value, c.Args())
-
 	pref := c.Args().Last()
 	if len(c.Commands) == 0 && !strings.HasPrefix(pref, "-") {
 		return CompleteDefault(pref)
@@ -112,6 +91,9 @@ func DefaultCommandComplete(c *Command) error {
 
 	if !strings.HasPrefix(pref, "-") {
 		for _, s := range c.Commands {
+			if pref == "" && s.Name[0] == '_' {
+				continue
+			}
 			if strings.HasPrefix(s.Name, pref) {
 				names = append(names, s.Name)
 				continue
@@ -143,6 +125,9 @@ func DefaultCommandComplete(c *Command) error {
 		}
 		for _, f := range c.Flags {
 			b := f.Base()
+			if strings.TrimLeft(pref, "-") == "" && b.Name[0] == '_' {
+				continue
+			}
 			if addflag(b.Name) {
 				continue
 			}
@@ -155,15 +140,36 @@ func DefaultCommandComplete(c *Command) error {
 		}
 	}
 
-	mw := io.MultiWriter(Writer, &debug)
-
-	fmt.Fprintf(mw, `COMPREPLY=($(compgen -W "%s"))`, strings.Join(names, " "))
+	fmt.Fprintf(Writer, `COMPREPLY=($(compgen -W "%s")); compopt -o nosort`, strings.Join(names, " "))
 
 	return nil
 }
 
-func FileFlagCompleteFunc(f Flag, _ *Command, last string) error {
-	fmt.Fprintf(Writer, `compgen -o default "%s"`, last)
+func DefaultFlagCompletion(f Flag, c *Command, last string) error {
+	switch f.(type) {
+	case *FileFlag:
+		fmt.Fprintf(Writer, `_longopt`)
+	}
+	if last != "" {
+		return nil
+	}
+
+	var msg string
+	if h := f.Base().CompletionHelp; h != "" {
+		msg = h
+	} else {
+		tp := ""
+		switch f.(type) {
+		case *StringFlag:
+			tp = "string"
+		case *IntFlag:
+			tp = "int"
+		default:
+			tp = fmt.Sprintf("%T", f)
+		}
+		msg = fmt.Sprintf("expected %s argument", tp)
+	}
+	fmt.Fprintf(Writer, `COMPREPLY=("%s" " ")`, msg)
 	return nil
 }
 
