@@ -64,6 +64,7 @@ func main() {
 				app.F{Name: "max", Aliases: []string{"M"}}.NewInt(100),
 				app.F{Name: "crypto", Aliases: []string{"c"}}.NewBool(false),
 			},
+			Completion: app.NoArgumentsExpectedCompletion,
 		},
 		{Name: "secret",
 			Hidden: true,
@@ -74,6 +75,7 @@ func main() {
 				// But also it could be used to invoke custom Before of After FlagAction in moment of parsing
 				&app.F{Name: "help", Aliases: []string{"h"}},
 			},
+			Completion: app.NoArgumentsExpectedCompletion,
 		},
 	}
 

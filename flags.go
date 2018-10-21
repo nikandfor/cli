@@ -32,7 +32,7 @@ type (
 		Hidden         bool
 		Before         FlagAction
 		After          FlagAction
-		Complete       func(f Flag, c *Command, last string) error
+		Completion     func(f Flag, c *Command, last string) error
 		CompletionHelp string
 	}
 

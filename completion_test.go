@@ -12,10 +12,10 @@ func TestCompletionPref(t *testing.T) {
 	comp := false
 
 	c := &Command{
-		Name:     "command",
-		Aliases:  []string{"com", "do"},
-		Action:   func(c *Command) error { act = true; return nil },
-		Complete: func(c *Command) error { comp = true; return nil },
+		Name:       "command",
+		Aliases:    []string{"com", "do"},
+		Action:     func(c *Command) error { act = true; return nil },
+		Completion: func(c *Command) error { comp = true; return nil },
 		Flags: []Flag{
 			F{Name: "flag"}.NewBool(false),
 			F{Name: "val", Aliases: []string{"v"}}.NewString("str"),
@@ -37,10 +37,10 @@ func TestCompletionNew(t *testing.T) {
 	comp := false
 
 	c := &Command{
-		Name:     "command",
-		Aliases:  []string{"com", "do"},
-		Action:   func(c *Command) error { act = true; return nil },
-		Complete: func(c *Command) error { comp = true; return nil },
+		Name:       "command",
+		Aliases:    []string{"com", "do"},
+		Action:     func(c *Command) error { act = true; return nil },
+		Completion: func(c *Command) error { comp = true; return nil },
 		Flags: []Flag{
 			F{Name: "flag"}.NewBool(false),
 			F{Name: "val", Aliases: []string{"v"}}.NewString("str"),
@@ -76,25 +76,25 @@ func TestDefaultCommandCompletion(t *testing.T) {
 	var buf bytes.Buffer
 	Writer = &buf
 
-	err := DefaultCommandComplete(c)
+	err := DefaultCommandCompletion(c)
 	assert.NoError(t, err)
 	assert.Equal(t, `compgen -W "cmda cmdb bmd --flag --fmag"`, buf.String())
 
 	buf.Reset()
 	c.args = Args{"c"}
-	err = DefaultCommandComplete(c)
+	err = DefaultCommandCompletion(c)
 	assert.NoError(t, err)
 	assert.Equal(t, `compgen -W "cmda cmdb cd"`, buf.String())
 
 	buf.Reset()
 	c.args = Args{"-"}
-	err = DefaultCommandComplete(c)
+	err = DefaultCommandCompletion(c)
 	assert.NoError(t, err)
 	assert.Equal(t, `compgen -W "--flag --fmag"`, buf.String())
 
 	buf.Reset()
 	c.args = Args{"-m"}
-	err = DefaultCommandComplete(c)
+	err = DefaultCommandCompletion(c)
 	assert.NoError(t, err)
 	assert.Equal(t, `compgen -W "-m"`, buf.String())
 
@@ -102,13 +102,13 @@ func TestDefaultCommandCompletion(t *testing.T) {
 
 	buf.Reset()
 	c.args = Args{""}
-	err = DefaultCommandComplete(c)
+	err = DefaultCommandCompletion(c)
 	assert.NoError(t, err)
 	assert.Equal(t, `compgen -o default ""`, buf.String())
 
 	buf.Reset()
 	c.args = Args{"a"}
-	err = DefaultCommandComplete(c)
+	err = DefaultCommandCompletion(c)
 	assert.NoError(t, err)
 	assert.Equal(t, `compgen -o default "a"`, buf.String())
 }
@@ -119,15 +119,15 @@ func TestCompleteFlag(t *testing.T) {
 	fcomp := false
 
 	c := &Command{
-		Name:     "command",
-		Aliases:  []string{"com", "do"},
-		Action:   func(c *Command) error { act = true; return nil },
-		Complete: func(c *Command) error { comp = true; return nil },
+		Name:       "command",
+		Aliases:    []string{"com", "do"},
+		Action:     func(c *Command) error { act = true; return nil },
+		Completion: func(c *Command) error { comp = true; return nil },
 		Flags: []Flag{
 			F{Name: "flag"}.NewBool(false),
 			F{Name: "int", Aliases: []string{"i"}}.NewInt(0),
 			F{Name: "val", Aliases: []string{"v"},
-				Complete: func(f Flag, _ *Command, last string) error {
+				Completion: func(f Flag, _ *Command, last string) error {
 					fcomp = true
 					return nil
 				},

@@ -76,15 +76,20 @@ func CompleteLast(args []string) (bool, string) {
 	return true, args[len(args)-NLastComplete]
 }
 
-func CompleteDefault(last string) error {
+func NoArgumentsExpectedCompletion(c *Command) error {
+	fmt.Fprintf(Writer, `COMPREPLY=(%s); compopt -o nosort`, "no arguments expected")
+	return nil
+}
+
+func DefaultBashCompletion(last string) error {
 	fmt.Fprintf(Writer, "_longopt")
 	return nil
 }
 
-func DefaultCommandComplete(c *Command) error {
+func DefaultCommandCompletion(c *Command) error {
 	pref := c.Args().Last()
 	if len(c.Commands) == 0 && !strings.HasPrefix(pref, "-") {
-		return CompleteDefault(pref)
+		return DefaultBashCompletion(pref)
 	}
 
 	var names []string
@@ -167,9 +172,9 @@ func DefaultFlagCompletion(f Flag, c *Command, last string) error {
 		default:
 			tp = fmt.Sprintf("%T", f)
 		}
-		msg = fmt.Sprintf("expected %s argument", tp)
+		msg = fmt.Sprintf("%s argument expected", tp)
 	}
-	fmt.Fprintf(Writer, `COMPREPLY=("%s" " ")`, msg)
+	fmt.Fprintf(Writer, `COMPREPLY=(%s); compopt -o nosort`, msg)
 	return nil
 }
 

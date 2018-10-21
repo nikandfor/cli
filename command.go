@@ -14,15 +14,15 @@ type (
 	Action func(c *Command) error
 
 	Command struct {
-		Name     string
-		Aliases  []string
-		Action   Action
-		Commands []*Command
-		Flags    []Flag
-		Before   Action
-		After    Action
-		Complete Action
-		Hidden   bool
+		Name       string
+		Aliases    []string
+		Action     Action
+		Commands   []*Command
+		Flags      []Flag
+		Before     Action
+		After      Action
+		Completion Action
+		Hidden     bool
 
 		noMoreFlags bool
 
@@ -69,10 +69,10 @@ func (c *Command) Run(args []string) (err error) {
 
 	if ok, last := CompleteLast(args); ok {
 		c.args = append(c.args, last)
-		if c.Complete != nil {
-			return c.Complete(c)
+		if c.Completion != nil {
+			return c.Completion(c)
 		}
-		return DefaultCommandComplete(c)
+		return DefaultCommandCompletion(c)
 	}
 
 	if c.Before != nil {
@@ -143,7 +143,7 @@ func (c *Command) parseFlag(args []string) ([]string, error) {
 		}
 
 		if ok, last := CompleteLast(args); ok {
-			if comp := f.Base().Complete; comp != nil {
+			if comp := f.Base().Completion; comp != nil {
 				err = comp(f, c, last)
 			} else {
 				err = DefaultFlagCompletion(f, c, last)
