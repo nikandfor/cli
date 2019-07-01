@@ -163,9 +163,11 @@ var DefaultCommandCompletion = func(c *Command) error {
 }
 
 var DefaultFlagCompletion = func(f Flag, c *Command, last string) error {
-	switch f.(type) {
+	switch f := f.(type) {
 	case *FileFlag:
 		fmt.Fprintf(Writer, `_longopt`)
+	case *EnumFlag:
+		return AlternativeCompletion(f.Options)(c)
 	}
 	if last != "" {
 		return nil
@@ -175,17 +177,7 @@ var DefaultFlagCompletion = func(f Flag, c *Command, last string) error {
 	if h := f.Base().CompletionHelp; h != "" {
 		msg = h
 	} else {
-		tp := ""
-		switch f.(type) {
-		case *StringFlag:
-			tp = "string"
-		case *StringSliceFlag:
-			tp = "string"
-		case *IntFlag:
-			tp = "int"
-		default:
-			tp = fmt.Sprintf("%T", f)
-		}
+		tp := f.Type()
 		msg = fmt.Sprintf("%s argument expected", tp)
 	}
 	fmt.Fprintf(Writer, `COMPREPLY=(%s); compopt -o nosort`, msg)

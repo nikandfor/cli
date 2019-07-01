@@ -88,8 +88,15 @@ func main() {
 		},
 		{Name: "choose",
 			Action:      choose,
-			Description: "Gives you a choice",
+			Description: "Gives you a choice. (use completion)",
 			Completion:  choosecomp},
+		{Name: "coffee",
+			Action:      coffee,
+			Description: "Select some coffoo using flag",
+			Flags: []app.Flag{
+				app.F{Name: "type", Description: "which coffee you want"}.NewEnum("", []string{"latte", "cappuccino", "ristretto", "espresso", "macchiato"}),
+			},
+		},
 	}
 
 	app.AddHelpCommandAndFlag()
@@ -154,6 +161,14 @@ func random(c *app.Command) error {
 	}
 
 	fmt.Printf("%d\n", rnd)
+
+	return nil
+}
+
+func coffee(c *app.Command) error {
+	tp := c.Flag("type").VString()
+
+	fmt.Printf("Have a good %s coffee!\n", tp)
 
 	return nil
 }
