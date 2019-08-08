@@ -5,26 +5,23 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/nikandfor/cli"
 )
 
-type flag interface {
-	Names() string
-	Parse(n, v string, more []string) ([]string, error)
-}
-
 var (
-	flags []flag
-	args  []string
+	flags []cli.Flag
+	args  cli.Args
 )
 
 func Parse() {
-	args := os.Args
+	as := os.Args[1:]
 	nomore := false
 	var err error
 
-	for len(args) > 0 {
-		arg := args[0]
-		args = args[1:]
+	for len(as) > 0 {
+		arg := as[0]
+		as = as[1:]
 
 		switch {
 		case arg == "--" && !nomore:
@@ -45,7 +42,7 @@ func Parse() {
 			if f == nil {
 				panic(fmt.Errorf("no such flag: %v", arg))
 			}
-			args, err = f.Parse(k, v, args)
+			as, err = f.Parse(k, v, as)
 			if err != nil {
 				panic(err)
 			}
@@ -55,7 +52,7 @@ func Parse() {
 	}
 }
 
-func getflag(n string) flag {
+func getflag(n string) cli.Flag {
 	for _, f := range flags {
 		ns := strings.Split(f.Names(), ",")
 		for _, fn := range ns {
@@ -67,26 +64,26 @@ func getflag(n string) flag {
 	return nil
 }
 
+func Bool(name string, val bool, help string) *bool {
+	f := cli.NewBool(name, val, help)
+	flags = append(flags, f)
+	return &f.Value
+}
+
 func Int(name string, val int, help string) *int {
-	f := &IntFlag{Name: name, Value: val, Help: help}
+	f := cli.NewInt(name, val, help)
 	flags = append(flags, f)
 	return &f.Value
 }
 
 func String(name, val, help string) *string {
-	f := &StringFlag{Name: name, Value: val, Help: help}
+	f := cli.NewString(name, val, help)
 	flags = append(flags, f)
 	return &f.Value
 }
 
 func Duration(name string, val time.Duration, help string) *time.Duration {
-	f := &DurationFlag{Name: name, Value: val, Help: help}
-	flags = append(flags, f)
-	return &f.Value
-}
-
-func Bool(name string, val bool, help string) *bool {
-	f := &BoolFlag{Name: name, Value: val, Help: help}
+	f := cli.NewDuration(name, val, help)
 	flags = append(flags, f)
 	return &f.Value
 }
