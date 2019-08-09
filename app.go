@@ -15,19 +15,26 @@ type (
 		Arg0   string // command name
 		Args   Args
 
-		Name     string
-		Action   Action
-		Flags    []Flag
-		Commands []*Command
-		Before   Action
-		After    Action
+		Name        string
+		Description string
+		HelpText    string
+		Action      Action
+		Flags       []Flag
+		Commands    []*Command
+		Before      Action
+		After       Action
+		Complete    Action
 	}
 
 	Flag interface {
 		Base() *F
-		Names() string
 		Parse(name, val string, more []string) (rest []string, err error)
 	}
+)
+
+var (
+	stdout = os.Stdout
+	stderr = os.Stderr
 )
 
 var App = Command{
@@ -132,7 +139,7 @@ func (c *Command) run(args []string) (err error) {
 	}()
 
 	if c.Action == nil {
-		return fmt.Errorf("command without action: %v", c.Name)
+		return defaultHelp(c)
 	}
 
 	return c.Action(c)
@@ -205,7 +212,7 @@ func (c *Command) Flag(n string) Flag {
 		return nil
 	}
 	for _, f := range c.Flags {
-		ns := strings.Split(f.Names(), ",")
+		ns := strings.Split(f.Base().Name, ",")
 		for _, fn := range ns {
 			if fn == n {
 				return f
@@ -215,21 +222,11 @@ func (c *Command) Flag(n string) Flag {
 	return c.parent.Flag(n)
 }
 
-func (c *Command) MainName() string {
-	return strings.SplitN(c.Name, ",", 2)[0]
-}
-
-func (c *Command) Command(n string) *Command {
-	if c == nil {
-		return nil
-	}
-	if c.match(n) {
+func (c *Command) Parent(n int) *Command {
+	if c == nil || n == 0 {
 		return c
 	}
-	if c.parent == nil {
-		return c
-	}
-	return c.parent.Command(n)
+	return c.parent.Parent(n - 1)
 }
 
 func (a Args) Len() int { return len(a) }

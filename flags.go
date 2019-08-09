@@ -11,8 +11,8 @@ type (
 	option func(f *F)
 
 	F struct {
-		Name string
-		Help string
+		Name        string
+		Description string
 
 		set bool
 	}
@@ -58,22 +58,22 @@ func (f *String) Names() string   { return f.Name }
 func (f *Duration) Names() string { return f.Name }
 
 func NewBool(n string, v bool, h string, opts ...option) *Bool {
-	f := F{Name: n, Help: h}
+	f := F{Name: n, Description: h}
 	f.setOpts(opts...)
 	return &Bool{F: f, Value: v}
 }
 func NewInt(n string, v int, h string, opts ...option) *Int {
-	f := F{Name: n, Help: h}
+	f := F{Name: n, Description: h}
 	f.setOpts(opts...)
 	return &Int{F: f, Value: v}
 }
 func NewString(n, v, h string, opts ...option) *String {
-	f := F{Name: n, Help: h}
+	f := F{Name: n, Description: h}
 	f.setOpts(opts...)
 	return &String{F: f, Value: v}
 }
 func NewDuration(n string, v time.Duration, h string, opts ...option) *Duration {
-	f := F{Name: n, Help: h}
+	f := F{Name: n, Description: h}
 	f.setOpts(opts...)
 	return &Duration{F: f, Value: v}
 }
