@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,9 +11,13 @@ import (
 type (
 	option func(f *F)
 
+	FlagAction func(f Flag, c *Command) error
+
 	F struct {
 		Name        string
 		Description string
+		Before      FlagAction
+		After       FlagAction
 
 		set bool
 	}
@@ -37,6 +42,8 @@ type (
 		Value time.Duration
 	}
 )
+
+var ErrFlagExit = errors.New("flag exit")
 
 func (f *F) setOpts(ops ...option) {
 	for _, o := range ops {

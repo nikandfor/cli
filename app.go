@@ -11,11 +11,12 @@ type (
 	Action func(c *Command) error
 
 	Command struct {
-		parent *Command
+		Parent *Command
 		Arg0   string // command name
 		Args   Args
 
 		Name        string
+		Usage       string
 		Description string
 		HelpText    string
 		Action      Action
@@ -27,6 +28,8 @@ type (
 	}
 
 	Flag interface {
+		IsSet() bool
+
 		Base() *F
 		Parse(name, val string, more []string) (rest []string, err error)
 	}
@@ -37,8 +40,41 @@ var (
 	stderr = os.Stderr
 )
 
-var App = Command{
-	Name: os.Args[0],
+var (
+	App = Command{
+		Name: os.Args[0],
+	}
+)
+
+func Chain(a ...Action) Action {
+	return func(c *Command) error {
+		for _, a := range a {
+			err := a(c)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func GOTOCommand(n string) Action {
+	return func(c *Command) (err error) {
+		sub := c.sub(n)
+		if a := sub.Before; a != nil {
+			if err = a(sub); err != nil {
+				return
+			}
+		}
+		defer func() {
+			if a := sub.After; a != nil {
+				if err = a(sub); err != nil {
+					return
+				}
+			}
+		}()
+		return sub.Action(sub)
+	}
 }
 
 func RunAndExit(args []string) {
@@ -77,6 +113,12 @@ func (c *Command) Int(f string) int {
 }
 
 func (c *Command) run(args []string) (err error) {
+	defer func() {
+		if err == ErrFlagExit {
+			err = nil
+		}
+	}()
+
 	c.Arg0 = args[0]
 	args = args[1:]
 	noMoreFlags := false
@@ -91,25 +133,7 @@ func (c *Command) run(args []string) (err error) {
 			noMoreFlags = true
 			args = args[1:]
 		case len(arg) != 0 && arg[0] == '-' && !noMoreFlags:
-			var k, v string
-			if len(arg) != 1 && arg[1] == '-' {
-				arg = arg[2:]
-				if p := strings.IndexByte(arg, '='); p != -1 {
-					k, v = arg[:p], arg[p:]
-				} else {
-					k = arg
-				}
-			} else {
-				arg = arg[1:]
-				if len(arg) != 0 {
-					k, v = arg[:1], arg[1:]
-				}
-			}
-			f := c.Flag(k)
-			if f == nil {
-				return fmt.Errorf("no such flag: %v", arg)
-			}
-			args, err = f.Parse(k, v, args[1:])
+			args, err = c.parseFlag(arg, args)
 			if err != nil {
 				return err
 			}
@@ -139,15 +163,51 @@ func (c *Command) run(args []string) (err error) {
 	}()
 
 	if c.Action == nil {
-		return defaultHelp(c)
+		return defaultHelp(nil, c)
 	}
 
 	return c.Action(c)
 }
 
+func (c *Command) parseFlag(arg string, args []string) (rest []string, err error) {
+	var k, v string
+	if len(arg) != 1 && arg[1] == '-' {
+		arg = arg[2:]
+		if p := strings.IndexByte(arg, '='); p != -1 {
+			k, v = arg[:p], arg[p:]
+		} else {
+			k = arg
+		}
+	} else {
+		arg = arg[1:]
+		if len(arg) != 0 {
+			k, v = arg[:1], arg[1:]
+		}
+	}
+	f := c.Flag(k)
+	if f == nil {
+		return nil, fmt.Errorf("no such flag: %v", arg)
+	}
+	if a := f.Base().Before; a != nil {
+		if err = a(f, c); err != nil {
+			return
+		}
+	}
+	rest, err = f.Parse(k, v, args[1:])
+	if err != nil {
+		return
+	}
+	if a := f.Base().After; a != nil {
+		if err = a(f, c); err != nil {
+			return
+		}
+	}
+	return
+}
+
 func (c *Command) runBefore() (err error) {
-	if c.parent != nil {
-		if err = c.parent.runBefore(); err != nil {
+	if c.Parent != nil {
+		if err = c.Parent.runBefore(); err != nil {
 			return err
 		}
 	}
@@ -165,8 +225,8 @@ func (c *Command) runAfter() (err error) {
 			return err
 		}
 	}
-	if c.parent != nil {
-		if err = c.parent.runAfter(); err != nil {
+	if c.Parent != nil {
+		if err = c.Parent.runAfter(); err != nil {
 			return err
 		}
 	}
@@ -190,7 +250,7 @@ func (c *Command) check() (err error) {
 func (c *Command) sub(n string) *Command {
 	for _, sub := range c.Commands {
 		if sub.match(n) {
-			sub.parent = c
+			sub.Parent = c
 			return sub
 		}
 	}
@@ -219,14 +279,7 @@ func (c *Command) Flag(n string) Flag {
 			}
 		}
 	}
-	return c.parent.Flag(n)
-}
-
-func (c *Command) Parent(n int) *Command {
-	if c == nil || n == 0 {
-		return c
-	}
-	return c.parent.Parent(n - 1)
+	return c.Parent.Flag(n)
 }
 
 func (a Args) Len() int { return len(a) }
