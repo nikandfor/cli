@@ -20,18 +20,11 @@ type (
 		Description string
 		HelpText    string
 		Action      Action
-		Flags       []Flag
+		Flags       []*Flag
 		Commands    []*Command
 		Before      Action
 		After       Action
 		Complete    Action
-	}
-
-	Flag interface {
-		IsSet() bool
-
-		Base() *F
-		Parse(name, val string, more []string) (rest []string, err error)
 	}
 )
 
@@ -77,6 +70,10 @@ func GOTOCommand(n string) Action {
 	}
 }
 
+func Run(args []string) error {
+	return App.run(args)
+}
+
 func RunAndExit(args []string) {
 	err := App.run(args)
 	if err == nil {
@@ -88,26 +85,39 @@ func RunAndExit(args []string) {
 	os.Exit(1)
 }
 
+func RunCommand(c *Command, args []string) error {
+	return c.run(args)
+}
+
 func (c *Command) Bool(f string) bool {
 	ff := c.Flag(f)
-	if f, ok := ff.(*Bool); ok {
-		return f.Value
+	if ff == nil {
+		panic(fmt.Sprintf("no such flag: %v", f))
+	}
+	if fv, ok := ff.Value.(*Bool); ok {
+		return fv.Value
 	}
 	return false
 }
 
 func (c *Command) String(f string) string {
 	ff := c.Flag(f)
-	if sf, ok := ff.(*String); ok {
-		return sf.Value
+	if ff == nil {
+		panic(fmt.Sprintf("no such flag: %v", f))
+	}
+	if fv, ok := ff.Value.(*String); ok {
+		return fv.Value
 	}
 	return ""
 }
 
 func (c *Command) Int(f string) int {
 	ff := c.Flag(f)
-	if f, ok := ff.(*Int); ok {
-		return f.Value
+	if ff == nil {
+		panic(fmt.Sprintf("no such flag: %v", f))
+	}
+	if fv, ok := ff.Value.(*Int); ok {
+		return fv.Value
 	}
 	return 0
 }
@@ -132,7 +142,7 @@ func (c *Command) run(args []string) (err error) {
 		case arg == "--" && !noMoreFlags:
 			noMoreFlags = true
 			args = args[1:]
-		case len(arg) != 0 && arg[0] == '-' && !noMoreFlags:
+		case len(arg) >= 2 && arg[0] == '-' && arg != "--" && !noMoreFlags:
 			args, err = c.parseFlag(arg, args)
 			if err != nil {
 				return err
@@ -188,16 +198,17 @@ func (c *Command) parseFlag(arg string, args []string) (rest []string, err error
 	if f == nil {
 		return nil, fmt.Errorf("no such flag: %v", arg)
 	}
-	if a := f.Base().Before; a != nil {
+	if a := f.Before; a != nil {
 		if err = a(f, c); err != nil {
 			return
 		}
 	}
-	rest, err = f.Parse(k, v, args[1:])
+	rest, err = f.Value.Parse(f, k, v, args[1:])
 	if err != nil {
 		return
 	}
-	if a := f.Base().After; a != nil {
+	f.IsSet = true
+	if a := f.After; a != nil {
 		if err = a(f, c); err != nil {
 			return
 		}
@@ -235,7 +246,7 @@ func (c *Command) runAfter() (err error) {
 
 func (c *Command) check() (err error) {
 	for _, f := range c.Flags {
-		if err = f.Base().check(); err != nil {
+		if err = f.check(); err != nil {
 			return
 		}
 	}
@@ -267,12 +278,12 @@ func (c *Command) match(n string) bool {
 	return false
 }
 
-func (c *Command) Flag(n string) Flag {
+func (c *Command) Flag(n string) *Flag {
 	if c == nil {
 		return nil
 	}
 	for _, f := range c.Flags {
-		ns := strings.Split(f.Base().Name, ",")
+		ns := strings.Split(f.Name, ",")
 		for _, fn := range ns {
 			if fn == n {
 				return f

@@ -10,6 +10,7 @@ func TestCommandRunSimple(t *testing.T) {
 	c := &Command{
 		Name:        "long,l",
 		Description: "test command",
+		Action:      nil,
 		HelpText: `Some long descriptive help message here.
 Possible multiline.
     With paddings.`,
@@ -18,11 +19,12 @@ Possible multiline.
 			Description: "subcommand",
 			Action:      func(*Command) error { return nil },
 		}},
-		Flags: []Flag{
-			NewBool("flag,f,ff", false, "some flag"),
+		Flags: []*Flag{
+			NewFlag("flag,f,ff", false, "some flag"),
 		},
 	}
 
-	err := c.run([]string{"base", "first", "second", "--flag"})
+	err := c.run([]string{"base", "first", "second", "--flag", "-"})
 	assert.NoError(t, err)
+	assert.Equal(t, c.Args, Args{"first", "second", "-"})
 }

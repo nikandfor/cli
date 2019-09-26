@@ -1,89 +1,65 @@
 package flag
 
 import (
-	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/nikandfor/cli"
 )
 
 var (
-	flags []cli.Flag
-	args  cli.Args
+	cmd = cli.Command{
+		Name: os.Args[0],
+	}
 )
 
-func Parse() {
-	as := os.Args[1:]
-	nomore := false
-	var err error
-
-	for len(as) > 0 {
-		arg := as[0]
-		as = as[1:]
-
-		switch {
-		case arg == "--" && !nomore:
-			nomore = true
-		case len(arg) != 0 && arg[0] == '-' && !nomore:
-			if len(arg) > 1 && arg[1] == '-' {
-				arg = arg[2:]
-			} else {
-				arg = arg[1:]
-			}
-			var k, v string
-			if p := strings.IndexByte(arg, '='); p != -1 {
-				k, v = arg[:p], arg[p:]
-			} else {
-				k = arg
-			}
-			f := getflag(k)
-			if f == nil {
-				panic(fmt.Errorf("no such flag: %v", arg))
-			}
-			as, err = f.Parse(k, v, as)
-			if err != nil {
-				panic(err)
-			}
-		default:
-			args = append(args, arg)
-		}
-	}
+func Arg(i int) string {
+	return cmd.Args[i]
 }
 
-func getflag(n string) cli.Flag {
-	for _, f := range flags {
-		ns := strings.Split(f.Names(), ",")
-		for _, fn := range ns {
-			if fn == n {
-				return f
-			}
-		}
+func Args() []string {
+	return cmd.Args
+}
+
+func NArg() int {
+	return cmd.Args.Len()
+}
+
+func Lookup(n string) *cli.Flag {
+	return cmd.Flag(n)
+}
+
+func Parse() {
+	err := cli.RunCommand(&cmd, os.Args)
+	if err != nil {
+		panic(err)
 	}
-	return nil
 }
 
 func Bool(name string, val bool, help string) *bool {
-	f := cli.NewBool(name, val, help)
-	flags = append(flags, f)
-	return &f.Value
+	fv := &cli.Bool{val}
+	f := cli.NewFlag(name, fv, help)
+	cmd.Flags = append(cmd.Flags, f)
+	return &fv.Value
 }
 
 func Int(name string, val int, help string) *int {
-	f := cli.NewInt(name, val, help)
-	flags = append(flags, f)
-	return &f.Value
+	fv := &cli.Int{val}
+	f := cli.NewFlag(name, fv, help)
+	cmd.Flags = append(cmd.Flags, f)
+	return &fv.Value
 }
 
 func String(name, val, help string) *string {
-	f := cli.NewString(name, val, help)
-	flags = append(flags, f)
-	return &f.Value
+	fv := &cli.String{val}
+	f := cli.NewFlag(name, fv, help)
+	cmd.Flags = append(cmd.Flags, f)
+	return &fv.Value
 }
 
 func Duration(name string, val time.Duration, help string) *time.Duration {
-	f := cli.NewDuration(name, val, help)
-	flags = append(flags, f)
-	return &f.Value
+	fv := &cli.Duration{val}
+	f := cli.NewFlag(name, fv, help)
+	cmd.Flags = append(cmd.Flags, f)
+	return &fv.Value
 }

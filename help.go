@@ -5,11 +5,12 @@ import (
 	"text/template"
 )
 
-var HelpFlag = &Bool{F: F{
+var HelpFlag = &Flag{
 	Name:        "help,h",
 	Description: "show that message",
 	After:       defaultHelp,
-}}
+	Value:       &Bool{},
+}
 
 var commandHelpTemplate = template.Must(template.New("command help").Parse(`{{ .Name }} {{ .Usage }} - {{ .Description }}
 {{- if .HelpText }}
@@ -24,12 +25,12 @@ Subcommands:
 {{- if .Flags }}
 Flags:
 {{- range .Flags }}
-    {{ .Base.Name }} - {{ .Description }}{{ if .Value }} ({{ .Value }}){{ end }}
+    {{ .Name }}{{ if .Value.Value }}={{ .Value.Value }}{{ end }}				- {{ .Description }}
 {{- end }}
 {{- end }}
 `))
 
-func defaultHelp(f Flag, c *Command) error {
+func defaultHelp(f *Flag, c *Command) error {
 	err := commandHelpTemplate.Execute(os.Stdout, c)
 	if err != nil {
 		return err
