@@ -9,7 +9,11 @@ import (
 
 var (
 	cmd = cli.Command{
-		Name: os.Args[0],
+		Name:   os.Args[0],
+		Action: cli.NoAction,
+		Flags: []*cli.Flag{
+			cli.HelpFlag,
+		},
 	}
 )
 

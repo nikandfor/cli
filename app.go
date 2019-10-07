@@ -89,6 +89,8 @@ func RunCommand(c *Command, args []string) error {
 	return c.run(args)
 }
 
+func NoAction(c *Command) error { return nil }
+
 func (c *Command) Bool(f string) bool {
 	ff := c.Flag(f)
 	if ff == nil {

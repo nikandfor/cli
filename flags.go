@@ -21,7 +21,8 @@ type (
 
 		Value FlagValue
 
-		IsSet bool
+		Mandatory bool
+		IsSet     bool
 	}
 
 	FlagValue interface {
