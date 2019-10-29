@@ -21,6 +21,7 @@ type (
 
 		Value FlagValue
 
+		Hidden    bool
 		Mandatory bool
 		IsSet     bool
 	}

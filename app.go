@@ -51,7 +51,7 @@ func Chain(a ...Action) Action {
 	}
 }
 
-func GOTOCommand(n string) Action {
+func SubcommandAlias(n string) Action {
 	return func(c *Command) (err error) {
 		sub := c.sub(n)
 		if a := sub.Before; a != nil {
