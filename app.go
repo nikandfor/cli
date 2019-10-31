@@ -306,14 +306,14 @@ func (a Args) First() string {
 	return a[0]
 }
 
-func (a Args) Tail() []string {
+func (a Args) Tail() Args {
 	if len(a) == 0 {
 		return nil
 	}
 	return a[1:]
 }
 
-func (a Args) Pop() (string, []string) {
+func (a Args) Pop() (string, Args) {
 	if len(a) == 0 {
 		return "", nil
 	}
