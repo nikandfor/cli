@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -39,6 +40,10 @@ var (
 	}
 )
 
+var (
+	ErrAliasNotFound = errors.New("alias command not found")
+)
+
 func Chain(a ...Action) Action {
 	return func(c *Command) error {
 		for _, a := range a {
@@ -54,6 +59,10 @@ func Chain(a ...Action) Action {
 func SubcommandAlias(n string) Action {
 	return func(c *Command) (err error) {
 		sub := c.sub(n)
+		if sub == nil {
+			return ErrAliasNotFound
+		}
+		sub.Args = c.Args
 		if a := sub.Before; a != nil {
 			if err = a(sub); err != nil {
 				return
