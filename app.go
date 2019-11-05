@@ -29,19 +29,20 @@ type (
 	}
 )
 
-var (
+var ( // stdout/stderr
 	stdout = os.Stdout
 	stderr = os.Stderr
 )
 
-var (
+var ( // App
 	App = Command{
 		Name: os.Args[0],
 	}
 )
 
-var (
+var ( // errors
 	ErrAliasNotFound = errors.New("alias command not found")
+	ErrArguments     = errors.New("bad arguments")
 )
 
 func Chain(a ...Action) Action {
