@@ -2,6 +2,7 @@ package flag
 
 import (
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/nikandfor/cli"
@@ -9,11 +10,8 @@ import (
 
 var (
 	cmd = cli.Command{
-		Name:   os.Args[0],
+		Name:   filepath.Base(os.Args[0]),
 		Action: cli.NoAction,
-		Flags: []*cli.Flag{
-			cli.HelpFlag,
-		},
 	}
 )
 
@@ -34,6 +32,10 @@ func Lookup(n string) *cli.Flag {
 }
 
 func Parse() {
+	if cmd.Flag("help") == nil {
+		cmd.Flags = append(cmd.Flags, cli.HelpFlag)
+	}
+
 	err := cli.RunCommand(&cmd, os.Args)
 	if err != nil {
 		panic(err)
@@ -66,4 +68,27 @@ func Duration(name string, val time.Duration, help string) *time.Duration {
 	f := cli.NewFlag(name, fv, help)
 	cmd.Flags = append(cmd.Flags, f)
 	return &fv.Value
+}
+
+func StringSlice(name string, val []string, help string) *[]string {
+	fv := &cli.StringSlice{val}
+	f := cli.NewFlag(name, fv, help)
+	cmd.Flags = append(cmd.Flags, f)
+	return &fv.Value
+}
+
+func Usage(name, usage string) {
+	if name != "" {
+		cmd.Name = name
+	}
+	cmd.Usage = usage
+
+	if cmd.Flag("help") == nil {
+		cmd.Flags = append(cmd.Flags, cli.HelpFlag)
+	}
+
+	err := cli.RunCommand(&cmd, append(os.Args, "-h"))
+	if err != nil {
+		panic(err)
+	}
 }

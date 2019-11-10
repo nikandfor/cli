@@ -45,6 +45,10 @@ type (
 	Duration struct {
 		Value time.Duration
 	}
+
+	StringSlice struct {
+		Value []string
+	}
 )
 
 var ErrFlagExit = errors.New("flag exit")
@@ -74,6 +78,8 @@ func NewFlag(n string, v interface{}, d string, opts ...option) *Flag {
 		val = &String{v}
 	case time.Duration:
 		val = &Duration{v}
+	case []string:
+		val = &StringSlice{v}
 	default:
 		panic("unsupported flag value type")
 	}
@@ -149,6 +155,21 @@ func (fv *Duration) Parse(f *Flag, n, v string, more []string) (rest []string, e
 	if err != nil {
 		return nil, err
 	}
+
+	return more, nil
+}
+
+func (fv *StringSlice) Parse(f *Flag, n, v string, more []string) (rest []string, err error) {
+	if len(v) != 0 && v[0] == '=' {
+		v = v[1:]
+	} else if v == "" && len(more) != 0 {
+		v = more[0]
+		more = more[1:]
+	} else {
+		return nil, fmt.Errorf("value expected")
+	}
+
+	fv.Value = append(fv.Value, v)
 
 	return more, nil
 }
