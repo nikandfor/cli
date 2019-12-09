@@ -9,7 +9,7 @@ var HelpFlag = &Flag{
 	Name:        "help,h",
 	Description: "show that message",
 	After:       defaultHelp,
-	Value:       &Bool{},
+	Value:       false,
 }
 
 var commandHelpTemplate = template.Must(template.New("command help").Parse(`{{ .Name }} {{ .Usage }} - {{ .Description }}
@@ -25,7 +25,7 @@ Subcommands:
 {{- if .Flags }}
 Flags:
 {{- range .Flags }}
-    {{ .Name }}{{ if .Value.Value }}={{ .Value.Value }}{{ end }}				- {{ .Description }}
+    {{ .Name }}{{ with .Value }}={{ . }}{{ end }}				- {{ .Description }}
 {{- end }}
 {{- end }}
 `))

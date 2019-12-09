@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 type (
@@ -42,7 +43,7 @@ var ( // App
 
 var ( // errors
 	ErrAliasNotFound = errors.New("alias command not found")
-	ErrArguments     = errors.New("bad arguments")
+	ErrBadArguments  = errors.New("bad arguments")
 )
 
 func Chain(a ...Action) Action {
@@ -106,10 +107,7 @@ func (c *Command) Bool(f string) bool {
 	if ff == nil {
 		panic(fmt.Sprintf("no such flag: %v", f))
 	}
-	if fv, ok := ff.Value.(*Bool); ok {
-		return fv.Value
-	}
-	return false
+	return ff.Value.(bool)
 }
 
 func (c *Command) String(f string) string {
@@ -117,10 +115,7 @@ func (c *Command) String(f string) string {
 	if ff == nil {
 		panic(fmt.Sprintf("no such flag: %v", f))
 	}
-	if fv, ok := ff.Value.(*String); ok {
-		return fv.Value
-	}
-	return ""
+	return ff.Value.(string)
 }
 
 func (c *Command) Int(f string) int {
@@ -128,10 +123,23 @@ func (c *Command) Int(f string) int {
 	if ff == nil {
 		panic(fmt.Sprintf("no such flag: %v", f))
 	}
-	if fv, ok := ff.Value.(*Int); ok {
-		return fv.Value
+	return ff.Value.(int)
+}
+
+func (c *Command) Duration(f string) time.Duration {
+	ff := c.Flag(f)
+	if ff == nil {
+		panic(fmt.Sprintf("no such flag: %v", f))
 	}
-	return 0
+	return ff.Value.(time.Duration)
+}
+
+func (c *Command) StringSlice(f string) []string {
+	ff := c.Flag(f)
+	if ff == nil {
+		panic(fmt.Sprintf("no such flag: %v", f))
+	}
+	return ff.Value.([]string)
 }
 
 func (c *Command) run(args []string) (err error) {
@@ -215,7 +223,22 @@ func (c *Command) parseFlag(arg string, args []string) (rest []string, err error
 			return
 		}
 	}
-	rest, err = f.Value.Parse(f, k, v, args[1:])
+	switch fv := f.Value.(type) {
+	case FlagValue:
+		rest, err = fv.Parse(f, k, v, args[1:])
+	case bool:
+		rest, err = parseBool(f, k, v, args[1:])
+	case int:
+		rest, err = parseInt(f, k, v, args[1:])
+	case string:
+		rest, err = parseString(f, k, v, args[1:])
+	case time.Duration:
+		rest, err = parseDuration(f, k, v, args[1:])
+	case []string:
+		rest, err = parseStringSlice(f, k, v, args[1:])
+	default:
+		panic("unknown flag type")
+	}
 	if err != nil {
 		return
 	}

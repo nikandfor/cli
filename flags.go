@@ -19,7 +19,7 @@ type (
 		Before      FlagAction
 		After       FlagAction
 
-		Value FlagValue
+		Value interface{}
 
 		Hidden    bool
 		Mandatory bool
@@ -28,26 +28,6 @@ type (
 
 	FlagValue interface {
 		Parse(f *Flag, name, val string, more []string) (rest []string, err error)
-	}
-
-	Bool struct {
-		Value bool
-	}
-
-	Int struct {
-		Value int
-	}
-
-	String struct {
-		Value string
-	}
-
-	Duration struct {
-		Value time.Duration
-	}
-
-	StringSlice struct {
-		Value []string
 	}
 )
 
@@ -65,21 +45,11 @@ func (f *Flag) check() error {
 }
 
 func NewFlag(n string, v interface{}, d string, opts ...option) *Flag {
-	var val FlagValue
+	var val interface{}
 
 	switch v := v.(type) {
-	case FlagValue:
+	case FlagValue, bool, int, string, time.Duration, []string:
 		val = v
-	case bool:
-		val = &Bool{v}
-	case int:
-		val = &Int{v}
-	case string:
-		val = &String{v}
-	case time.Duration:
-		val = &Duration{v}
-	case []string:
-		val = &StringSlice{v}
 	default:
 		panic("unsupported flag value type")
 	}
@@ -89,16 +59,16 @@ func NewFlag(n string, v interface{}, d string, opts ...option) *Flag {
 	return f
 }
 
-func (fv *Bool) Parse(f *Flag, n, v string, more []string) (rest []string, err error) {
+func parseBool(f *Flag, n, v string, more []string) (rest []string, err error) {
 	if len(v) != 0 && v[0] == '=' {
 		v = v[1:]
 	}
 
 	switch strings.ToLower(v) {
 	case "", "true", "yes", "yeah", "1":
-		fv.Value = true
+		f.Value = true
 	case "false", "no", "nope", "0":
-		fv.Value = false
+		f.Value = false
 	default:
 		return nil, fmt.Errorf("can't parse bool value: %v", v)
 	}
@@ -106,7 +76,7 @@ func (fv *Bool) Parse(f *Flag, n, v string, more []string) (rest []string, err e
 	return more, nil
 }
 
-func (fv *Int) Parse(f *Flag, n, v string, more []string) (rest []string, err error) {
+func parseInt(f *Flag, n, v string, more []string) (rest []string, err error) {
 	if len(v) != 0 && v[0] == '=' {
 		v = v[1:]
 	} else if v == "" && len(more) != 0 {
@@ -121,12 +91,12 @@ func (fv *Int) Parse(f *Flag, n, v string, more []string) (rest []string, err er
 		return nil, err
 	}
 
-	fv.Value = int(vl)
+	f.Value = int(vl)
 
 	return more, nil
 }
 
-func (fv *String) Parse(f *Flag, n, v string, more []string) (rest []string, err error) {
+func parseString(f *Flag, n, v string, more []string) (rest []string, err error) {
 	if len(v) != 0 && v[0] == '=' {
 		v = v[1:]
 	} else if v == "" && len(more) != 0 {
@@ -136,12 +106,12 @@ func (fv *String) Parse(f *Flag, n, v string, more []string) (rest []string, err
 		return nil, fmt.Errorf("value expected")
 	}
 
-	fv.Value = v
+	f.Value = v
 
 	return more, nil
 }
 
-func (fv *Duration) Parse(f *Flag, n, v string, more []string) (rest []string, err error) {
+func parseDuration(f *Flag, n, v string, more []string) (rest []string, err error) {
 	if len(v) != 0 && v[0] == '=' {
 		v = v[1:]
 	} else if v == "" && len(more) != 0 {
@@ -151,7 +121,7 @@ func (fv *Duration) Parse(f *Flag, n, v string, more []string) (rest []string, e
 		return nil, fmt.Errorf("value expected")
 	}
 
-	fv.Value, err = time.ParseDuration(v)
+	f.Value, err = time.ParseDuration(v)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +129,7 @@ func (fv *Duration) Parse(f *Flag, n, v string, more []string) (rest []string, e
 	return more, nil
 }
 
-func (fv *StringSlice) Parse(f *Flag, n, v string, more []string) (rest []string, err error) {
+func parseStringSlice(f *Flag, n, v string, more []string) (rest []string, err error) {
 	if len(v) != 0 && v[0] == '=' {
 		v = v[1:]
 	} else if v == "" && len(more) != 0 {
@@ -169,7 +139,7 @@ func (fv *StringSlice) Parse(f *Flag, n, v string, more []string) (rest []string
 		return nil, fmt.Errorf("value expected")
 	}
 
-	fv.Value = append(fv.Value, v)
+	f.Value = append(f.Value.([]string), v)
 
 	return more, nil
 }
