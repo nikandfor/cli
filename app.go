@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -17,22 +18,23 @@ type (
 		Arg0   string // command name
 		Args   Args
 
-		Name        string
-		Usage       string
-		Description string
-		HelpText    string
-		Action      Action
-		Flags       []*Flag
-		Commands    []*Command
-		Before      Action
-		After       Action
-		Complete    Action
+		Name          string
+		Usage         string
+		Description   string
+		HelpText      string
+		Action        Action
+		Flags         []*Flag
+		Commands      []*Command
+		Before        Action
+		After         Action
+		Complete      Action
+		FlagEnvPrefix string
 	}
 )
 
 var ( // stdout/stderr
-	stdout = os.Stdout
-	stderr = os.Stderr
+	stdout io.Writer = os.Stdout
+	stderr io.Writer = os.Stderr
 )
 
 var ( // App
@@ -43,6 +45,7 @@ var ( // App
 
 var ( // errors
 	ErrAliasNotFound = errors.New("alias command not found")
+	ErrNoSuchFlag    = errors.New("no such flag")
 	ErrBadArguments  = errors.New("bad arguments")
 )
 
@@ -216,7 +219,7 @@ func (c *Command) parseFlag(arg string, args []string) (rest []string, err error
 	}
 	f := c.Flag(k)
 	if f == nil {
-		return nil, fmt.Errorf("no such flag: %v", arg)
+		return nil, fmt.Errorf("%w: %v", ErrNoSuchFlag, arg)
 	}
 	if a := f.Before; a != nil {
 		if err = a(f, c); err != nil {
