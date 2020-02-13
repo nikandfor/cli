@@ -239,6 +239,7 @@ func (c *Command) parseFlag(arg string, args []string) (rest []string, err error
 		rest, err = parseDuration(f, k, v, args[1:])
 	case []string:
 		rest, err = parseStringSlice(f, k, v, args[1:])
+	case nil:
 	default:
 		panic("unknown flag type")
 	}

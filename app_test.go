@@ -116,7 +116,6 @@ Possible multiline.
 
 	err := c.run([]string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4", "--nonexisted"})
 	errors.Is(err, ErrNoSuchFlag)
-	assert.NoError(t, err)
 	assert.Equal(t, c.sub("sub").Args, Args{"first", "second", "-"})
 
 	assert.Equal(t, ``, buf.String())
