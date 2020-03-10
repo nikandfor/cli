@@ -48,7 +48,8 @@ func NewFlag(n string, v interface{}, d string, opts ...option) *Flag {
 	var val interface{}
 
 	switch v := v.(type) {
-	case FlagValue, bool, int, string, time.Duration, []string:
+	case FlagValue, bool, int, string, time.Duration, []string,
+		*bool, *int, *string, *time.Duration:
 		val = v
 	default:
 		panic("unsupported flag value type")
@@ -65,9 +66,9 @@ func parseBool(f *Flag, n, v string, more []string) (rest []string, err error) {
 	}
 
 	switch strings.ToLower(v) {
-	case "", "true", "yes", "yeah", "1":
+	case "", "true", "yes", "yeah", "y", "1":
 		f.Value = true
-	case "false", "no", "nope", "0":
+	case "false", "no", "nope", "n", "0":
 		f.Value = false
 	default:
 		return nil, fmt.Errorf("can't parse bool value: %v", v)
