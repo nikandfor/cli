@@ -36,8 +36,8 @@ func TestFlagFile(t *testing.T) {
 	err := c.run([]string{"first", "second", "--flag", "before", "--flagfile=qwe"})
 	assert.NoError(t, err)
 	assert.True(t, ok)
-	assert.Equal(t, "first", c.Flag("flag").Value.(string))
-	assert.Equal(t, "ffval", c.Commands[0].Flag("flag").Value.(string))
+	assert.Equal(t, "first", *c.Flag("flag").Value.(*string))
+	assert.Equal(t, "ffval", *c.Commands[0].Flag("flag").Value.(*string))
 }
 
 func TestFlagFile2(t *testing.T) {
@@ -67,6 +67,6 @@ func TestFlagFile2(t *testing.T) {
 	err := c.run([]string{"first", "second", "--flag", "before", "--flagfile=qwe", "--flag=after"})
 	assert.NoError(t, err)
 	assert.True(t, ok)
-	assert.Equal(t, "first", c.Flag("flag").Value.(string))
-	assert.Equal(t, "after", c.Commands[0].Flag("flag").Value.(string))
+	assert.Equal(t, "first", *c.Flag("flag").Value.(*string))
+	assert.Equal(t, "after", *c.Commands[0].Flag("flag").Value.(*string))
 }

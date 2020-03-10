@@ -229,19 +229,19 @@ func (c *Command) parseFlag(arg string, args []string) (rest []string, err error
 	switch fv := f.Value.(type) {
 	case FlagValue:
 		rest, err = fv.Parse(f, k, v, args[1:])
-	case bool:
+	case *bool:
 		rest, err = parseBool(f, k, v, args[1:])
-	case int:
+	case *int:
 		rest, err = parseInt(f, k, v, args[1:])
-	case string:
+	case *string:
 		rest, err = parseString(f, k, v, args[1:])
-	case time.Duration:
+	case *time.Duration:
 		rest, err = parseDuration(f, k, v, args[1:])
 	case []string:
 		rest, err = parseStringSlice(f, k, v, args[1:])
 	case nil:
 	default:
-		panic("unknown flag type")
+		panic(fmt.Errorf("unknown flag type: %T %v", f.Value, f.Value))
 	}
 	if err != nil {
 		return

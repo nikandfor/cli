@@ -12,12 +12,12 @@ var FlagFileFlag = &Flag{
 	Name:        "flagfile,ff",
 	Description: "load flags from file",
 	After:       flagFile,
-	Value:       "",
+	Value:       strptr(""),
 }
 
 func flagFile(f *Flag, c *Command) error {
 	args, err := func() (args Args, err error) {
-		f, err := fopen(f.Value.(string))
+		f, err := fopen(*f.Value.(*string))
 		if err != nil {
 			return
 		}
@@ -53,3 +53,5 @@ func flagFile(f *Flag, c *Command) error {
 
 	return nil
 }
+
+func strptr(s string) *string { return &s }

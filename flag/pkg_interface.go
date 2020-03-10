@@ -43,38 +43,33 @@ func Parse() {
 }
 
 func Bool(name string, val bool, help string) *bool {
-	fv := &cli.Bool{val}
-	f := cli.NewFlag(name, fv, help)
+	f := cli.NewFlag(name, &val, help)
 	cmd.Flags = append(cmd.Flags, f)
-	return &fv.Value
+	return &val
 }
 
 func Int(name string, val int, help string) *int {
-	fv := &cli.Int{val}
-	f := cli.NewFlag(name, fv, help)
+	f := cli.NewFlag(name, &val, help)
 	cmd.Flags = append(cmd.Flags, f)
-	return &fv.Value
+	return &val
 }
 
 func String(name, val, help string) *string {
-	fv := &cli.String{val}
-	f := cli.NewFlag(name, fv, help)
+	f := cli.NewFlag(name, &val, help)
 	cmd.Flags = append(cmd.Flags, f)
-	return &fv.Value
+	return &val
 }
 
 func Duration(name string, val time.Duration, help string) *time.Duration {
-	fv := &cli.Duration{val}
-	f := cli.NewFlag(name, fv, help)
+	f := cli.NewFlag(name, &val, help)
 	cmd.Flags = append(cmd.Flags, f)
-	return &fv.Value
+	return &val
 }
 
 func StringSlice(name string, val []string, help string) *[]string {
-	fv := &cli.StringSlice{val}
-	f := cli.NewFlag(name, fv, help)
+	f := cli.NewFlag(name, &val, help)
 	cmd.Flags = append(cmd.Flags, f)
-	return &fv.Value
+	return &val
 }
 
 func Usage(name, usage string) {

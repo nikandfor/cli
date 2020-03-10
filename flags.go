@@ -48,8 +48,17 @@ func NewFlag(n string, v interface{}, d string, opts ...option) *Flag {
 	var val interface{}
 
 	switch v := v.(type) {
-	case FlagValue, bool, int, string, time.Duration, []string,
-		*bool, *int, *string, *time.Duration:
+	case FlagValue, []string:
+		val = v
+	case bool:
+		val = &v
+	case int:
+		val = &v
+	case string:
+		val = &v
+	case time.Duration:
+		val = &v
+	case *bool, *int, *string, *time.Duration:
 		val = v
 	default:
 		panic("unsupported flag value type")
@@ -65,14 +74,16 @@ func parseBool(f *Flag, n, v string, more []string) (rest []string, err error) {
 		v = v[1:]
 	}
 
+	q := false
 	switch strings.ToLower(v) {
 	case "", "true", "yes", "yeah", "y", "1":
-		f.Value = true
+		q = true
 	case "false", "no", "nope", "n", "0":
-		f.Value = false
 	default:
 		return nil, fmt.Errorf("can't parse bool value: %v", v)
 	}
+
+	*f.Value.(*bool) = q
 
 	return more, nil
 }
@@ -92,7 +103,7 @@ func parseInt(f *Flag, n, v string, more []string) (rest []string, err error) {
 		return nil, err
 	}
 
-	f.Value = int(vl)
+	*f.Value.(*int) = int(vl)
 
 	return more, nil
 }
@@ -107,7 +118,7 @@ func parseString(f *Flag, n, v string, more []string) (rest []string, err error)
 		return nil, fmt.Errorf("value expected")
 	}
 
-	f.Value = v
+	*f.Value.(*string) = v
 
 	return more, nil
 }
@@ -122,10 +133,12 @@ func parseDuration(f *Flag, n, v string, more []string) (rest []string, err erro
 		return nil, fmt.Errorf("value expected")
 	}
 
-	f.Value, err = time.ParseDuration(v)
+	q, err := time.ParseDuration(v)
 	if err != nil {
 		return nil, err
 	}
+
+	*f.Value.(*time.Duration) = q
 
 	return more, nil
 }
