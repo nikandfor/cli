@@ -110,7 +110,7 @@ func (c *Command) Bool(f string) bool {
 	if ff == nil {
 		panic(fmt.Sprintf("no such flag: %v", f))
 	}
-	return ff.Value.(bool)
+	return *ff.Value.(*bool)
 }
 
 func (c *Command) String(f string) string {
@@ -118,7 +118,7 @@ func (c *Command) String(f string) string {
 	if ff == nil {
 		panic(fmt.Sprintf("no such flag: %v", f))
 	}
-	return ff.Value.(string)
+	return *ff.Value.(*string)
 }
 
 func (c *Command) Int(f string) int {
@@ -126,7 +126,7 @@ func (c *Command) Int(f string) int {
 	if ff == nil {
 		panic(fmt.Sprintf("no such flag: %v", f))
 	}
-	return ff.Value.(int)
+	return *ff.Value.(*int)
 }
 
 func (c *Command) Duration(f string) time.Duration {
@@ -134,7 +134,7 @@ func (c *Command) Duration(f string) time.Duration {
 	if ff == nil {
 		panic(fmt.Sprintf("no such flag: %v", f))
 	}
-	return ff.Value.(time.Duration)
+	return *ff.Value.(*time.Duration)
 }
 
 func (c *Command) StringSlice(f string) []string {
@@ -219,7 +219,7 @@ func (c *Command) parseFlag(arg string, args []string) (rest []string, err error
 	}
 	f := c.Flag(k)
 	if f == nil {
-		return nil, fmt.Errorf("%w: %v", ErrNoSuchFlag, arg)
+		return nil, NewNoSuchFlagError(arg)
 	}
 	if a := f.Before; a != nil {
 		if err = a(f, c); err != nil {

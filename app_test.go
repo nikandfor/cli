@@ -2,10 +2,9 @@ package cli
 
 import (
 	"bytes"
-	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/nikandfor/testify/assert"
 )
 
 func TestCommandRunSimple(t *testing.T) {
@@ -115,7 +114,9 @@ Possible multiline.
 	}
 
 	err := c.run([]string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4", "--nonexisted"})
-	errors.Is(err, ErrNoSuchFlag)
+	if err != ErrNoSuchFlag && err.(interface{ Unwrap() error }).Unwrap() != ErrNoSuchFlag {
+		assert.Fail(t, "bad error: %v", err)
+	}
 	assert.Equal(t, c.sub("sub").Args, Args{"first", "second", "-"})
 
 	assert.Equal(t, ``, buf.String())
