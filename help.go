@@ -8,7 +8,7 @@ var HelpFlag = &Flag{
 	Name:        "help,h",
 	Description: "show that message",
 	After:       defaultHelp,
-	Value:       false,
+	Value:       boolptr(false),
 }
 
 var commandHelpTemplate = template.Must(template.New("command help").Parse(`{{ .Name }} {{ .Usage }} - {{ .Description }}
@@ -40,3 +40,5 @@ func defaultHelp(f *Flag, c *Command) error {
 	}
 	return ErrFlagExit
 }
+
+func boolptr(v bool) *bool { return &v }
