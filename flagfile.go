@@ -8,14 +8,14 @@ import (
 
 var fopen func(string) (io.ReadCloser, error) = func(n string) (io.ReadCloser, error) { return os.Open(n) }
 
-var FlagFileFlag = &Flag{
+var FlagfileFlag = &Flag{
 	Name:        "flagfile,ff",
 	Description: "load flags from file",
-	After:       flagFile,
+	After:       flagfile,
 	Value:       strptr(""),
 }
 
-func flagFile(f *Flag, c *Command) error {
+func flagfile(f *Flag, c *Command) error {
 	args, err := func() (args Args, err error) {
 		f, err := fopen(*f.Value.(*string))
 		if err != nil {

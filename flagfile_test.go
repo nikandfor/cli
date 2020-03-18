@@ -29,7 +29,7 @@ func TestFlagFile(t *testing.T) {
 		}},
 		Flags: []*Flag{
 			NewFlag("flag", "first", ""),
-			FlagFileFlag,
+			FlagfileFlag,
 		},
 	}
 
@@ -60,7 +60,7 @@ func TestFlagFile2(t *testing.T) {
 		}},
 		Flags: []*Flag{
 			NewFlag("flag", "first", ""),
-			FlagFileFlag,
+			FlagfileFlag,
 		},
 	}
 
