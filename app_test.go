@@ -75,7 +75,7 @@ Possible multiline.
 
 	err := c.run([]string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4"})
 	assert.NoError(t, err)
-	assert.Equal(t, c.sub("sub").Args, Args{"first", "second", "-"})
+	assert.Equal(t, c.Command("sub").Args, Args{"first", "second", "-"})
 
 	assert.True(t, ok, "expected command not called")
 
@@ -117,7 +117,7 @@ Possible multiline.
 	if err != ErrNoSuchFlag && err.(interface{ Unwrap() error }).Unwrap() != ErrNoSuchFlag {
 		assert.Fail(t, "bad error: %v", err)
 	}
-	assert.Equal(t, c.sub("sub").Args, Args{"first", "second", "-"})
+	assert.Equal(t, c.Command("sub").Args, Args{"first", "second", "-"})
 
 	assert.Equal(t, ``, buf.String())
 }

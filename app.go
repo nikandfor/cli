@@ -63,7 +63,7 @@ func Chain(a ...Action) Action {
 
 func SubcommandAlias(n string) Action {
 	return func(c *Command) (err error) {
-		sub := c.sub(n)
+		sub := c.Command(n)
 		if sub == nil {
 			return ErrAliasNotFound
 		}
@@ -171,7 +171,7 @@ func (c *Command) run(args []string) (err error) {
 				return err
 			}
 		case c.Args == nil:
-			sub := c.sub(arg)
+			sub := c.Command(arg)
 			if sub != nil {
 				return sub.run(args)
 			}
@@ -297,7 +297,7 @@ func (c *Command) check() (err error) {
 	return nil
 }
 
-func (c *Command) sub(n string) *Command {
+func (c *Command) Command(n string) *Command {
 	for _, sub := range c.Commands {
 		if sub.match(n) {
 			sub.Parent = c
