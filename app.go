@@ -332,6 +332,10 @@ func (c *Command) Flag(n string) *Flag {
 	return c.Parent.Flag(n)
 }
 
+func (c *Command) MainName() string {
+	return strings.Split(c.Name, ",")[0]
+}
+
 func (a Args) Len() int { return len(a) }
 
 func (a Args) String() string { return strings.Join(a, " ") }
