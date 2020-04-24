@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nikandfor/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCommandRunSimple(t *testing.T) {
@@ -15,6 +16,7 @@ func TestCommandRunSimple(t *testing.T) {
 	c := &Command{
 		Name:        "long,l",
 		Description: "test command",
+		Args:        Args{},
 		Action:      func(*Command) error { ok = true; return nil },
 		HelpText: `Some long descriptive help message here.
 Possible multiline.
@@ -34,6 +36,7 @@ Possible multiline.
 			NewFlag("flag,f,ff", false, "some flag"),
 		},
 	}
+	require.NotNil(t, c.Args)
 
 	err := c.run([]string{"base", "first", "second", "--flag", "-"})
 	assert.NoError(t, err)
@@ -62,6 +65,7 @@ Possible multiline.
 		Commands: []*Command{{
 			Name:        "sub,s,alias",
 			Description: "subcommand",
+			Args:        Args{},
 			Action:      func(*Command) error { ok = true; return nil },
 			Flags: []*Flag{
 				NewFlag("subflag", 3, "some sub flag"),
@@ -72,6 +76,7 @@ Possible multiline.
 			HelpFlag,
 		},
 	}
+	require.NotNil(t, c.Command("sub").Args)
 
 	err := c.run([]string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4"})
 	assert.NoError(t, err)
@@ -99,6 +104,7 @@ Possible multiline.
 		Commands: []*Command{{
 			Name:        "sub,s,alias",
 			Description: "subcommand",
+			Args:        Args{},
 			Action: func(*Command) error {
 				assert.Fail(t, "command called")
 				return nil
@@ -112,6 +118,7 @@ Possible multiline.
 			HelpFlag,
 		},
 	}
+	require.NotNil(t, c.Command("sub").Args)
 
 	err := c.run([]string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4", "--nonexisted"})
 	if err != ErrNoSuchFlag && err.(interface{ Unwrap() error }).Unwrap() != ErrNoSuchFlag {

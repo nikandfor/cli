@@ -46,6 +46,7 @@ var ( // App
 var ( // errors
 	ErrAliasNotFound = errors.New("alias command not found")
 	ErrNoSuchFlag    = errors.New("no such flag")
+	ErrNoSuchCommand = errors.New("no such command")
 	ErrBadArguments  = errors.New("bad arguments")
 )
 
@@ -172,10 +173,10 @@ func (c *Command) run(args []string) (err error) {
 			}
 		case c.Args == nil:
 			sub := c.Command(arg)
-			if sub != nil {
-				return sub.run(args)
+			if sub == nil {
+				return NewNoSuchCommandError(arg)
 			}
-			fallthrough
+			return sub.run(args)
 		default:
 			c.Args = append(c.Args, arg)
 			args = args[1:]

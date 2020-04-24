@@ -5,3 +5,7 @@ package cli
 func NewNoSuchFlagError(f string) error {
 	return ErrNoSuchFlag
 }
+
+func NewNoSuchCommandError(c string) error {
+	return ErrNoSuchCommand
+}
