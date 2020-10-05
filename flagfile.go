@@ -12,7 +12,7 @@ var FlagfileFlag = &Flag{
 	Name:        "flagfile,ff",
 	Description: "load flags from file",
 	After:       flagfile,
-	Value:       strptr(""),
+	Value:       StringPtr(""),
 }
 
 func flagfile(f *Flag, c *Command) error {
@@ -54,4 +54,6 @@ func flagfile(f *Flag, c *Command) error {
 	return nil
 }
 
-func strptr(s string) *string { return &s }
+func StringPtr(s string) *string { return &s }
+
+func StringSlicePtr(s []string) *[]string { return &s }

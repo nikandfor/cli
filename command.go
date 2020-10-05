@@ -18,17 +18,17 @@ type (
 		Arg0   string // command name
 		Args   Args
 
-		Name          string
-		Usage         string
-		Description   string
-		HelpText      string
-		Action        Action
-		Flags         []*Flag
-		Commands      []*Command
-		Before        Action
-		After         Action
-		Complete      Action
-		FlagEnvPrefix string
+		Name        string
+		Usage       string
+		Description string
+		HelpText    string
+		Action      Action
+		Flags       []*Flag
+		Commands    []*Command
+		Before      Action
+		After       Action
+		Complete    Action
+		EnvPrefix   string
 	}
 )
 
@@ -143,7 +143,7 @@ func (c *Command) StringSlice(f string) []string {
 	if ff == nil {
 		panic(fmt.Sprintf("no such flag: %v", f))
 	}
-	return ff.Value.([]string)
+	return *ff.Value.(*[]string)
 }
 
 func (c *Command) run(args []string) (err error) {
@@ -156,6 +156,13 @@ func (c *Command) run(args []string) (err error) {
 	c.Arg0 = args[0]
 	args = args[1:]
 	noMoreFlags := false
+
+	if c.EnvPrefix != "" {
+		err = c.parseEnv(false)
+		if err != nil {
+			return
+		}
+	}
 
 	for len(args) > 0 {
 		arg := args[0]
@@ -203,25 +210,75 @@ func (c *Command) run(args []string) (err error) {
 	return c.Action(c)
 }
 
-func (c *Command) parseFlag(arg string, args []string) (rest []string, err error) {
-	var k, v string
-	if len(arg) != 1 && arg[1] == '-' {
-		arg = arg[2:]
-		if p := strings.IndexByte(arg, '='); p != -1 {
-			k, v = arg[:p], arg[p:]
+func (c *Command) parseEnv(explicit bool) (err error) {
+	//	tlog.Printf("parseEnv  cmd %v  %v\n", c.Name, c.EnvPrefix)
+	env := c.loadEnv()
+
+	//	tlog.Printf("envs: %q", env)
+
+	for i := 0; i < len(env); i++ {
+		if !strings.HasPrefix(env[i], c.EnvPrefix) {
+			continue
+		}
+
+		e := strings.TrimPrefix(env[i], c.EnvPrefix)
+		p := strings.Index(e, "=")
+		if p == -1 {
+			e = varname(e)
 		} else {
-			k = arg
+			e = varname(e[:p]) + e[p:]
 		}
-	} else {
-		arg = arg[1:]
-		if len(arg) != 0 {
-			k, v = arg[:1], arg[1:]
+
+		_, err = c.parseFlag(e, nil)
+		//	tlog.Printf("parse flag: %q => %v", e, err)
+		if err != nil {
+			return err
 		}
+
+		if i+1 < len(env) {
+			copy(env[i:], env[i+1:])
+		}
+		env = env[:len(env)-1]
+
+		i--
 	}
+
+	return nil
+}
+
+func (c *Command) loadEnv() (env []string) {
+	//	if c.Parent != nil {
+	//		env = c.Parent.loadEnv()
+	//	} else {
+	env = os.Environ()
+	//	}
+
+	//	if c.env != nil {
+	//		env = append(env, c.env...)
+	//	}
+
+	return
+}
+
+func (c *Command) parseFlag(arg string, args []string) (rest []string, err error) {
+	arg = strings.TrimLeft(arg, "-")
+
+	var k, v string
+	if p := strings.IndexByte(arg, '='); p != -1 {
+		k, v = arg[:p], arg[p:]
+	} else {
+		k = arg
+	}
+
+	if len(args) != 0 {
+		args = args[1:]
+	}
+
 	f := c.Flag(k)
 	if f == nil {
 		return nil, NewNoSuchFlagError(arg)
 	}
+
 	if a := f.Before; a != nil {
 		if err = a(f, c); err != nil {
 			return
@@ -229,17 +286,17 @@ func (c *Command) parseFlag(arg string, args []string) (rest []string, err error
 	}
 	switch fv := f.Value.(type) {
 	case FlagValue:
-		rest, err = fv.Parse(f, k, v, args[1:])
+		rest, err = fv.Parse(f, k, v, args)
 	case *bool:
-		rest, err = parseBool(f, k, v, args[1:])
+		rest, err = parseBool(f, k, v, args)
 	case *int:
-		rest, err = parseInt(f, k, v, args[1:])
+		rest, err = parseInt(f, k, v, args)
 	case *string:
-		rest, err = parseString(f, k, v, args[1:])
+		rest, err = parseString(f, k, v, args)
 	case *time.Duration:
-		rest, err = parseDuration(f, k, v, args[1:])
-	case []string:
-		rest, err = parseStringSlice(f, k, v, args[1:])
+		rest, err = parseDuration(f, k, v, args)
+	case *[]string:
+		rest, err = parseStringSlice(f, k, v, args)
 	case nil:
 	default:
 		panic(fmt.Errorf("unknown flag type: %T %v", f.Value, f.Value))
@@ -302,6 +359,8 @@ func (c *Command) Command(n string) *Command {
 	for _, sub := range c.Commands {
 		if sub.match(n) {
 			sub.Parent = c
+			//	sub.env = c.env
+
 			return sub
 		}
 	}

@@ -3,7 +3,7 @@ package flag
 import (
 	"testing"
 
-	"github.com/nikandfor/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBoolPointer(t *testing.T) {

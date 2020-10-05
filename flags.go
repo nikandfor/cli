@@ -1,11 +1,12 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/nikandfor/errors"
 )
 
 type (
@@ -31,7 +32,10 @@ type (
 	}
 )
 
-var ErrFlagExit = errors.New("flag exit")
+var (
+	ErrFlagExit          = errors.New("flag exit")
+	ErrFlagValueExpected = errors.New("value expected")
+)
 
 func (f *Flag) setOpts(ops ...option) {
 	for _, o := range ops {
@@ -48,7 +52,7 @@ func NewFlag(n string, v interface{}, d string, opts ...option) *Flag {
 	var val interface{}
 
 	switch v := v.(type) {
-	case FlagValue, []string:
+	case FlagValue:
 		val = v
 	case bool:
 		val = &v
@@ -58,7 +62,9 @@ func NewFlag(n string, v interface{}, d string, opts ...option) *Flag {
 		val = &v
 	case time.Duration:
 		val = &v
-	case *bool, *int, *string, *time.Duration:
+	case []string:
+		val = &v
+	case *bool, *int, *string, *time.Duration, *[]string:
 		val = v
 	default:
 		panic("unsupported flag value type")
@@ -95,7 +101,7 @@ func parseInt(f *Flag, n, v string, more []string) (rest []string, err error) {
 		v = more[0]
 		more = more[1:]
 	} else {
-		return nil, fmt.Errorf("value expected")
+		return nil, newValExp(n)
 	}
 
 	vl, err := strconv.ParseInt(v, 10, 64)
@@ -115,7 +121,7 @@ func parseString(f *Flag, n, v string, more []string) (rest []string, err error)
 		v = more[0]
 		more = more[1:]
 	} else {
-		return nil, fmt.Errorf("value expected")
+		return nil, newValExp(n)
 	}
 
 	*f.Value.(*string) = v
@@ -130,7 +136,7 @@ func parseDuration(f *Flag, n, v string, more []string) (rest []string, err erro
 		v = more[0]
 		more = more[1:]
 	} else {
-		return nil, fmt.Errorf("value expected")
+		return nil, newValExp(n)
 	}
 
 	q, err := time.ParseDuration(v)
@@ -150,10 +156,15 @@ func parseStringSlice(f *Flag, n, v string, more []string) (rest []string, err e
 		v = more[0]
 		more = more[1:]
 	} else {
-		return nil, fmt.Errorf("value expected")
+		return nil, newValExp(n)
 	}
 
-	f.Value = append(f.Value.([]string), v)
+	list := f.Value.(*[]string)
+	*list = append(*list, v)
 
 	return more, nil
+}
+
+func newValExp(n string) error {
+	return errors.Wrap(ErrFlagValueExpected, "flag %v", n)
 }

@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/nikandfor/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFlagFile(t *testing.T) {
