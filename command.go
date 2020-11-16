@@ -13,6 +13,8 @@ type (
 	Args   []string
 	Action func(c *Command) error
 
+	Context = Command
+
 	Command struct {
 		Parent *Command
 		Arg0   string // command name
@@ -102,6 +104,17 @@ func RunAndExit(args []string) {
 
 func RunCommand(c *Command, args []string) error {
 	return c.run(args)
+}
+
+func RunCommandAndExit(c *Command, args []string) {
+	err := c.run(args)
+	if err == nil {
+		return
+	}
+
+	fmt.Fprintf(os.Stderr, "%v\n", err)
+
+	os.Exit(1)
 }
 
 func NoAction(c *Command) error { return nil }
@@ -405,6 +418,14 @@ func (a Args) First() string {
 		return ""
 	}
 	return a[0]
+}
+
+func (a Args) Last() string {
+	if len(a) == 0 {
+		return ""
+	}
+
+	return a[len(a)-1]
 }
 
 func (a Args) Tail() Args {
