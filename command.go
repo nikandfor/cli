@@ -191,13 +191,16 @@ func (c *Command) run(args []string) (err error) {
 			if err != nil {
 				return err
 			}
-		case c.Args == nil:
+		default:
 			sub := c.Command(arg)
-			if sub == nil {
+			if sub != nil {
+				return sub.run(args)
+			}
+
+			if c.Args == nil {
 				return NewNoSuchCommandError(arg)
 			}
-			return sub.run(args)
-		default:
+
 			c.Args = append(c.Args, arg)
 			args = args[1:]
 		}
