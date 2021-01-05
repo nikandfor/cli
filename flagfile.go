@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"strings"
 )
 
 var fopen func(string) (io.ReadCloser, error) = func(n string) (io.ReadCloser, error) { return os.Open(n) }
@@ -12,12 +13,26 @@ var FlagfileFlag = &Flag{
 	Name:        "flagfile,ff",
 	Description: "load flags from file",
 	After:       flagfile,
-	Value:       StringPtr(""),
+	Value:       StringSlicePtr(nil),
 }
 
 func flagfile(f *Flag, c *Command) error {
 	args, err := func() (args Args, err error) {
-		f, err := fopen(*f.Value.(*string))
+		var ifexists bool
+		fnames := f.Value.(*[]string)
+		last := len(*fnames) - 1
+		fname := (*fnames)[last]
+		if strings.HasSuffix(fname, "?") {
+			fname = strings.TrimSuffix(fname, "?")
+			(*fnames)[last] = fname
+			ifexists = true
+		}
+
+		f, err := fopen(fname)
+		if os.IsNotExist(err) && ifexists {
+			*fnames = (*fnames)[:last]
+			return nil, nil
+		}
 		if err != nil {
 			return
 		}

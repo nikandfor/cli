@@ -31,6 +31,7 @@ type (
 		After       Action
 		Complete    Action
 		EnvPrefix   string
+		Hidden      bool
 	}
 )
 

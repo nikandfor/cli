@@ -19,7 +19,7 @@ var commandHelpTemplate = template.Must(template.New("command help").Parse(`{{ .
 {{ if .Commands }}
 Subcommands:
 {{- range .Commands }}
-	{{ .Name }} {{ .Usage }}{{ if .Description }} - {{ .Description }}{{ end }}
+	{{ if not .Hidden }}{{ .Name }} {{ .Usage }}{{ if .Description }} - {{ .Description }}{{ end }}{{ end }}
 {{ end }}
 {{- end }}
 {{- if or .Flags .Parent }}
