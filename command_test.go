@@ -38,7 +38,7 @@ Possible multiline.
 	}
 	require.NotNil(t, c.Args)
 
-	err := c.run([]string{"base", "first", "second", "--flag", "-"})
+	err := c.run([]string{"base", "first", "second", "--flag", "-"}, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, c.Args, Args{"first", "second", "-"})
 
@@ -78,7 +78,7 @@ Possible multiline.
 	}
 	require.NotNil(t, c.Command("sub").Args)
 
-	err := c.run([]string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4"})
+	err := c.run([]string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4"}, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, c.Command("sub").Args, Args{"first", "second", "-"})
 
@@ -120,7 +120,7 @@ Possible multiline.
 	}
 	require.NotNil(t, c.Command("sub").Args)
 
-	err := c.run([]string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4", "--nonexisted"})
+	err := c.run([]string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4", "--nonexisted"}, nil)
 	if err != ErrNoSuchFlag && err.(interface{ Unwrap() error }).Unwrap() != ErrNoSuchFlag {
 		assert.Fail(t, "bad error: %v", err)
 	}

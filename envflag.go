@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bufio"
-	"os"
 	"strings"
 )
 
@@ -33,7 +32,8 @@ func EnvfileFlagAction(ff *Flag, c *Command) error {
 	r := bufio.NewScanner(f)
 	r.Split(bufio.ScanLines)
 
-	//vars:
+	env := c.env
+
 	for r.Scan() {
 		e := r.Text()
 		e = strings.TrimSpace(e)
@@ -41,21 +41,14 @@ func EnvfileFlagAction(ff *Flag, c *Command) error {
 			continue
 		}
 
-		p := strings.Index(e, "=")
-		if p == -1 {
-			os.Setenv(e, "")
-		} else {
-			os.Setenv(e[:p], e[p+1:])
-		}
+		env = append(env, e)
 	}
 
 	if err = r.Err(); err != nil {
 		return err
 	}
 
-	if err = c.parseEnv(true); err != nil {
-		return err
-	}
+	c.env = env
 
 	return nil
 }

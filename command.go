@@ -32,6 +32,8 @@ type (
 		Complete    Action
 		EnvPrefix   string
 		Hidden      bool
+
+		env []string
 	}
 )
 
@@ -44,13 +46,6 @@ var ( // App
 	App = Command{
 		Name: os.Args[0],
 	}
-)
-
-var ( // errors
-	ErrAliasNotFound = errors.New("alias command not found")
-	ErrNoSuchFlag    = errors.New("no such flag")
-	ErrNoSuchCommand = errors.New("no such command")
-	ErrBadArguments  = errors.New("bad arguments")
 )
 
 func Chain(a ...Action) Action {
@@ -89,11 +84,11 @@ func SubcommandAlias(n string) Action {
 }
 
 func Run(args []string) error {
-	return App.run(args)
+	return App.run(args, os.Environ())
 }
 
 func RunAndExit(args []string) {
-	err := App.run(args)
+	err := App.run(args, os.Environ())
 	if err == nil {
 		return
 	}
@@ -103,12 +98,12 @@ func RunAndExit(args []string) {
 	os.Exit(1)
 }
 
-func RunCommand(c *Command, args []string) error {
-	return c.run(args)
+func RunCommand(c *Command, args, env []string) error {
+	return c.run(args, env)
 }
 
-func RunCommandAndExit(c *Command, args []string) {
-	err := c.run(args)
+func RunCommandAndExit(c *Command, args, env []string) {
+	err := c.run(args, env)
 	if err == nil {
 		return
 	}
@@ -160,7 +155,7 @@ func (c *Command) StringSlice(f string) []string {
 	return *ff.Value.(*[]string)
 }
 
-func (c *Command) run(args []string) (err error) {
+func (c *Command) run(args, env []string) (err error) {
 	defer func() {
 		if err == ErrFlagExit {
 			err = nil
@@ -171,11 +166,13 @@ func (c *Command) run(args []string) (err error) {
 	args = args[1:]
 	noMoreFlags := false
 
-	if c.EnvPrefix != "" {
-		err = c.parseEnv(false)
-		if err != nil {
-			return
-		}
+	if len(c.env) != 0 {
+		env = append(c.env, env...)
+	}
+
+	env, err = c.parseEnv(env)
+	if err != nil {
+		return
 	}
 
 	for len(args) > 0 {
@@ -195,7 +192,7 @@ func (c *Command) run(args []string) (err error) {
 		default:
 			sub := c.Command(arg)
 			if sub != nil {
-				return sub.run(args)
+				return sub.run(args, env)
 			}
 
 			if c.Args == nil {
@@ -227,18 +224,21 @@ func (c *Command) run(args []string) (err error) {
 	return c.Action(c)
 }
 
-func (c *Command) parseEnv(explicit bool) (err error) {
-	//	tlog.Printf("parseEnv  cmd %v  %v\n", c.Name, c.EnvPrefix)
-	env := c.loadEnv()
-
-	//	tlog.Printf("envs: %q", env)
+func (c *Command) parseEnv(env []string) (rest []string, err error) {
+	prefix := c.getEnvPrefix()
+	if prefix == "" {
+		return env, nil
+	}
 
 	for i := 0; i < len(env); i++ {
-		if !strings.HasPrefix(env[i], c.EnvPrefix) {
+		if !strings.HasPrefix(env[i], prefix) {
+			rest = append(rest, env[i])
+
 			continue
 		}
 
-		e := strings.TrimPrefix(env[i], c.EnvPrefix)
+		e := strings.TrimPrefix(env[i], prefix)
+
 		p := strings.Index(e, "=")
 		if p == -1 {
 			e = varname(e)
@@ -248,33 +248,29 @@ func (c *Command) parseEnv(explicit bool) (err error) {
 
 		_, err = c.parseFlag(e, nil)
 		//	tlog.Printf("parse flag: %q => %v", e, err)
+		if errors.Is(err, ErrNoSuchFlag) {
+			rest = append(rest, env[i])
+
+			continue
+		}
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		if i+1 < len(env) {
-			copy(env[i:], env[i+1:])
-		}
-		env = env[:len(env)-1]
-
-		i--
 	}
 
-	return nil
+	return rest, nil
 }
 
-func (c *Command) loadEnv() (env []string) {
-	//	if c.Parent != nil {
-	//		env = c.Parent.loadEnv()
-	//	} else {
-	env = os.Environ()
-	//	}
+func (c *Command) getEnvPrefix() string {
+	if c == nil {
+		return ""
+	}
 
-	//	if c.env != nil {
-	//		env = append(env, c.env...)
-	//	}
+	if c.EnvPrefix != "" {
+		return c.EnvPrefix
+	}
 
-	return
+	return c.Parent.getEnvPrefix()
 }
 
 func (c *Command) parseFlag(arg string, args []string) (rest []string, err error) {

@@ -33,7 +33,7 @@ func TestFlagFile(t *testing.T) {
 		},
 	}
 
-	err := c.run([]string{"first", "second", "--flag", "before", "--flagfile=qwe"})
+	err := c.run([]string{"first", "second", "--flag", "before", "--flagfile=qwe"}, nil)
 	assert.NoError(t, err)
 	assert.True(t, ok)
 	assert.Equal(t, "first", *c.Flag("flag").Value.(*string))
@@ -64,7 +64,7 @@ func TestFlagFile2(t *testing.T) {
 		},
 	}
 
-	err := c.run([]string{"first", "second", "--flag", "before", "--flagfile=qwe", "--flag=after"})
+	err := c.run([]string{"first", "second", "--flag", "before", "--flagfile=qwe", "--flag=after"}, nil)
 	assert.NoError(t, err)
 	assert.True(t, ok)
 	assert.Equal(t, "first", *c.Flag("flag").Value.(*string))
