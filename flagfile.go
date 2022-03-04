@@ -1,10 +1,9 @@
 package cli
 
 import (
-	"bufio"
-	"bytes"
 	"os"
-	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/nikandfor/errors"
 )
@@ -17,39 +16,50 @@ var FlagfileFlag = &Flag{
 
 var readFile func(string) ([]byte, error) = os.ReadFile
 
+func skip(d []byte, i int, f func(r rune) bool) int {
+	for w := 0; i < len(d); i += w {
+		var r rune
+		r, w = utf8.DecodeRune(d[i:])
+
+		if !f(r) {
+			return i
+		}
+	}
+
+	return i
+}
+
+func untilNewline(r rune) bool { return r != '\n' }
+func isArg(r rune) bool        { return !unicode.IsSpace(r) }
+
+//	isArg := func(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) || unicode.IsPunct(r) }
+
 func flagfile(c *Command, f *Flag, arg string, args []string) (_ []string, err error) {
 	args, err = ParseFlagString(c, f, arg, args)
 	if err != nil {
 		return nil, err
 	}
 
-	data, err := readFile(f.Value.(string))
+	d, err := readFile(f.Value.(string))
 	if err != nil {
 		return nil, errors.Wrap(err, "read file")
 	}
 
-	r := bufio.NewScanner(bytes.NewReader(data))
-	r.Split(bufio.ScanLines)
-
 	var add []string
 
-	for r.Scan() {
-		e := r.Text()
-		e = strings.TrimSpace(e)
-		if strings.HasPrefix(e, "#") {
+	for i := 0; i < len(d); i++ {
+		i = skip(d, i, unicode.IsSpace)
+
+		if d[i] == '#' {
+			i = skip(d, i, untilNewline)
 			continue
 		}
 
-		add = append(add, e)
-	}
+		st := i
+		i = skip(d, i, isArg)
 
-	if err = r.Err(); err != nil {
-		return nil, errors.Wrap(err, "scan file")
+		add = append(add, string(d[st:i]))
 	}
 
 	return append(add, args...), nil
 }
-
-func StringPtr(s string) *string { return &s }
-
-func StringSlicePtr(s []string) *[]string { return &s }

@@ -120,9 +120,11 @@ func (c *Command) run(args, env []string) (err error) {
 		return errors.WrapNoLoc(err, "setup")
 	}
 
-	env, err = c.parseEnv(env)
-	if err != nil {
-		return errors.WrapNoLoc(err, "parse env")
+	if len(env) != 0 {
+		env, err = c.parseEnv(env)
+		if err != nil {
+			return errors.WrapNoLoc(err, "parse env")
+		}
 	}
 
 	for len(args) != 0 {
@@ -204,11 +206,13 @@ func (c *Command) parseFlag(arg string, more []string) (rest []string, err error
 }
 
 func (c *Command) parseEnv(env []string) (rest []string, err error) {
-	if c.ParseEnv == nil {
-		return ParseEnv(c, env)
+	for c := c; c != nil; c = c.Parent {
+		if c.ParseEnv != nil {
+			return c.ParseEnv(c, env)
+		}
 	}
 
-	return c.ParseEnv(c, env)
+	return ParseEnv(c, env)
 }
 
 func GetEnvPrefix(c *Command) string {

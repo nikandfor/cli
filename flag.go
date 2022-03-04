@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -38,7 +39,7 @@ type (
 var (
 	ErrFlagExit           = errors.New("flag exit")
 	ErrFlagMandatory      = errors.New("flag is mandatory")
-	ErrFlagValueRequired  = errors.New("flag velue required")
+	ErrFlagValueRequired  = errors.New("flag value required")
 	ErrFlagActionRequired = errors.New("flag action required")
 	ErrNoSuchFlag         = errors.New("no such flag")
 )
@@ -62,16 +63,24 @@ func NewFlag(name string, val interface{}, help string, opts ...FlagOption) (f *
 		f.Action = ParseFlagBool
 	case time.Duration:
 		f.Action = ParseFlagDuration
+	case float64:
+		f.Action = ParseFlagFloat64
+	case float32:
+		f.Action = ParseFlagFloat32
 	case int:
 		f.Action = ParseFlagInt
+	case uint:
+		f.Action = ParseFlagUint
 	case int64:
 		f.Action = ParseFlagInt64
+	case uint64:
+		f.Action = ParseFlagUint64
 	case string:
 		f.Action = ParseFlagString
 	case Setter:
 		f.Action = ParseFlagValue(val, true, false)
 	default:
-		panic("unsupported value type")
+		panic(fmt.Sprintf("unsupported value type: %T", val))
 	}
 
 	return f
@@ -149,6 +158,19 @@ func ParseFlagFloat64(c *Command, f *Flag, arg string, args []string) ([]string,
 		}
 
 		return v, nil
+	}, true, false)
+
+	return act(c, f, arg, args)
+}
+
+func ParseFlagFloat32(c *Command, f *Flag, arg string, args []string) ([]string, error) {
+	act := ParseFlagFunc(func(val string) (_ interface{}, err error) {
+		v, err := strconv.ParseFloat(val, 32)
+		if err != nil {
+			return nil, err
+		}
+
+		return float32(v), nil
 	}, true, false)
 
 	return act(c, f, arg, args)

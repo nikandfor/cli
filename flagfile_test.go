@@ -6,7 +6,36 @@ import (
 	"github.com/nikandfor/assert"
 )
 
-func TestFlagFile(t *testing.T) {
+func TestFlagfile(t *testing.T) {
+	readFile = func(n string) ([]byte, error) {
+		assert.Equal(t, "file.flagfile", n)
+
+		return []byte(`first second
+		third --fourth`), nil
+	}
+
+	f := NewFlag("ff", "", "")
+	args, err := flagfile(nil, f, "--ff", []string{"file.flagfile", "a", "b"})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"first", "second", "third", "--fourth", "a", "b"}, args)
+}
+
+func TestFlagfile2(t *testing.T) {
+	readFile = func(n string) ([]byte, error) {
+		assert.Equal(t, "file.flagfile", n)
+
+		return []byte(`-a 9
+		-b 10 # 11
+		-c 12`), nil
+	}
+
+	f := NewFlag("ff", "", "")
+	args, err := flagfile(nil, f, "--ff", []string{"file.flagfile", "a", "b"})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"-a", "9", "-b", "10", "-c", "12", "a", "b"}, args)
+}
+
+func TestRunFlagfile(t *testing.T) {
 	readFile = func(n string) ([]byte, error) {
 		assert.Equal(t, "qwe", n)
 
@@ -37,7 +66,7 @@ func TestFlagFile(t *testing.T) {
 	assert.Equal(t, "ffval", c.Commands[0].Flag("flag").Value)
 }
 
-func TestFlagFile2(t *testing.T) {
+func TestRunFlagfile2(t *testing.T) {
 	readFile = func(n string) ([]byte, error) {
 		return []byte(`--flag ffval`), nil
 	}

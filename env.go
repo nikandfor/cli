@@ -8,17 +8,13 @@ import (
 	"github.com/nikandfor/errors"
 )
 
-var EnvfileFlag *Flag
-
-func init() {
-	EnvfileFlag = &Flag{
-		Name:        "envfile",
-		Description: "load env variables from file",
-		Action:      envfileFlagAction,
-	}
+var EnvfileFlag = &Flag{
+	Name:        "envfile",
+	Description: "load env variables from file",
+	Action:      envfile,
 }
 
-func envfileFlagAction(c *Command, f *Flag, arg string, args []string) (_ []string, err error) {
+func envfile(c *Command, f *Flag, arg string, args []string) (_ []string, err error) {
 	args, err = ParseFlagString(c, f, arg, args)
 	if err != nil {
 		return nil, err
@@ -36,6 +32,7 @@ func envfileFlagAction(c *Command, f *Flag, arg string, args []string) (_ []stri
 
 	for r.Scan() {
 		e := r.Text()
+
 		e = strings.TrimSpace(e)
 		if strings.HasPrefix(e, "#") {
 			continue
