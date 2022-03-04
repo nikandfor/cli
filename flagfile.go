@@ -2,71 +2,52 @@ package cli
 
 import (
 	"bufio"
-	"io"
+	"bytes"
 	"os"
 	"strings"
-)
 
-var fopen func(string) (io.ReadCloser, error) = func(n string) (io.ReadCloser, error) { return os.Open(n) }
+	"github.com/nikandfor/errors"
+)
 
 var FlagfileFlag = &Flag{
 	Name:        "flagfile,ff",
 	Description: "load flags from file",
-	After:       flagfile,
-	Value:       StringSlicePtr(nil),
+	Action:      flagfile,
 }
 
-func flagfile(f *Flag, c *Command) error {
-	args, err := func() (args Args, err error) {
-		var ifexists bool
-		fnames := f.Value.(*[]string)
-		last := len(*fnames) - 1
-		fname := (*fnames)[last]
-		if strings.HasSuffix(fname, "?") {
-			fname = strings.TrimSuffix(fname, "?")
-			(*fnames)[last] = fname
-			ifexists = true
-		}
+var readFile func(string) ([]byte, error) = os.ReadFile
 
-		f, err := fopen(fname)
-		if os.IsNotExist(err) && ifexists {
-			*fnames = (*fnames)[:last]
-			return nil, nil
-		}
-		if err != nil {
-			return
-		}
-		defer func() {
-			if e := f.Close(); err == nil {
-				err = e
-			}
-		}()
-
-		r := bufio.NewScanner(f)
-		r.Split(bufio.ScanWords)
-
-		for r.Scan() {
-			args = append(args, r.Text())
-		}
-
-		if err = r.Err(); err != nil {
-			return
-		}
-
-		return
-	}()
+func flagfile(c *Command, f *Flag, arg string, args []string) (_ []string, err error) {
+	args, err = ParseFlagString(c, f, arg, args)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	for args.Len() != 0 {
-		args, err = c.parseFlag(args[0], args)
-		if err != nil {
-			return err
+	data, err := readFile(f.Value.(string))
+	if err != nil {
+		return nil, errors.Wrap(err, "read file")
+	}
+
+	r := bufio.NewScanner(bytes.NewReader(data))
+	r.Split(bufio.ScanLines)
+
+	var add []string
+
+	for r.Scan() {
+		e := r.Text()
+		e = strings.TrimSpace(e)
+		if strings.HasPrefix(e, "#") {
+			continue
 		}
+
+		add = append(add, e)
 	}
 
-	return nil
+	if err = r.Err(); err != nil {
+		return nil, errors.Wrap(err, "scan file")
+	}
+
+	return append(add, args...), nil
 }
 
 func StringPtr(s string) *string { return &s }

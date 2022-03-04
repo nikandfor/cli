@@ -4,24 +4,40 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/nikandfor/assert"
 )
 
 func TestCommandRunSimple(t *testing.T) {
 	var ok bool
 	var buf bytes.Buffer
-	stderr = &buf
 
 	c := &Command{
 		Name:        "long,l",
 		Description: "test command",
 		Args:        Args{},
 		Action:      func(*Command) error { ok = true; return nil },
-		HelpText: `Some long descriptive help message here.
+		Help: `Some long descriptive help message here.
 Possible multiline.
     With paddings.`,
-		Commands: []*Command{{
+		Commands: []*Command{},
+		Flags: []*Flag{
+			NewFlag("flag,f,ff", false, "some flag"),
+		},
+
+		Stderr: &buf,
+	}
+	assert.NotNil(t, c.Args) // require
+
+	err := c.run([]string{"base", "first", "second", "--flag", "-"}, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, c.Args, Args{"first", "second", "-"})
+
+	assert.True(t, ok, "expected command not called")
+
+	assert.Equal(t, ``, buf.String())
+
+	/*
+		{
 			Name:        "sub,s,alias",
 			Description: "subcommand",
 			Action: func(*Command) error {
@@ -31,26 +47,13 @@ Possible multiline.
 			Flags: []*Flag{
 				NewFlag("subflag", 3, "some sub flag"),
 			},
-		}},
-		Flags: []*Flag{
-			NewFlag("flag,f,ff", false, "some flag"),
 		},
-	}
-	require.NotNil(t, c.Args)
-
-	err := c.run([]string{"base", "first", "second", "--flag", "-"}, nil)
-	assert.NoError(t, err)
-	assert.Equal(t, c.Args, Args{"first", "second", "-"})
-
-	assert.True(t, ok, "expected command not called")
-
-	assert.Equal(t, ``, buf.String())
+	*/
 }
 
 func TestCommandRunSub(t *testing.T) {
 	var ok bool
 	var buf bytes.Buffer
-	stderr = &buf
 
 	c := &Command{
 		Name:        "long,l",
@@ -59,7 +62,7 @@ func TestCommandRunSub(t *testing.T) {
 			assert.Fail(t, "command called")
 			return nil
 		},
-		HelpText: `Some long descriptive help message here.
+		Help: `Some long descriptive help message here.
 Possible multiline.
     With paddings.`,
 		Commands: []*Command{{
@@ -75,8 +78,9 @@ Possible multiline.
 			NewFlag("flag,f,ff", "empty", "some flag"),
 			HelpFlag,
 		},
+		Stderr: &buf,
 	}
-	require.NotNil(t, c.Command("sub").Args)
+	assert.NotNil(t, c.Command("sub").Args) // require
 
 	err := c.run([]string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4"}, nil)
 	assert.NoError(t, err)
@@ -89,7 +93,6 @@ Possible multiline.
 
 func TestCommandRunSub2(t *testing.T) {
 	var buf bytes.Buffer
-	stderr = &buf
 
 	c := &Command{
 		Name:        "long,l",
@@ -98,7 +101,7 @@ func TestCommandRunSub2(t *testing.T) {
 			assert.Fail(t, "command called")
 			return nil
 		},
-		HelpText: `Some long descriptive help message here.
+		Help: `Some long descriptive help message here.
 Possible multiline.
     With paddings.`,
 		Commands: []*Command{{
@@ -117,13 +120,12 @@ Possible multiline.
 			NewFlag("flag,f,ff", "empty", "some flag"),
 			HelpFlag,
 		},
+		Stderr: &buf,
 	}
-	require.NotNil(t, c.Command("sub").Args)
+	assert.NotNil(t, c.Command("sub").Args) // require
 
 	err := c.run([]string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4", "--nonexisted"}, nil)
-	if err != ErrNoSuchFlag && err.(interface{ Unwrap() error }).Unwrap() != ErrNoSuchFlag {
-		assert.Fail(t, "bad error: %v", err)
-	}
+	assert.ErrorIs(t, err, ErrNoSuchFlag)
 	assert.Equal(t, c.Command("sub").Args, Args{"first", "second", "-"})
 
 	assert.Equal(t, ``, buf.String())

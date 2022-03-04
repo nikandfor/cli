@@ -1,20 +1,17 @@
 package cli
 
 import (
-	"bytes"
-	"io"
-	"io/ioutil"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/nikandfor/assert"
 )
 
 func TestFlagFile(t *testing.T) {
-	var ff bytes.Buffer
-	fopen = func(n string) (io.ReadCloser, error) {
-		return ioutil.NopCloser(&ff), nil
+	readFile = func(n string) ([]byte, error) {
+		assert.Equal(t, "qwe", n)
+
+		return []byte(`--flag ffval`), nil
 	}
-	ff.Write([]byte(`--flag ffval`))
 
 	var ok bool
 
@@ -36,16 +33,14 @@ func TestFlagFile(t *testing.T) {
 	err := c.run([]string{"first", "second", "--flag", "before", "--flagfile=qwe"}, nil)
 	assert.NoError(t, err)
 	assert.True(t, ok)
-	assert.Equal(t, "first", *c.Flag("flag").Value.(*string))
-	assert.Equal(t, "ffval", *c.Commands[0].Flag("flag").Value.(*string))
+	assert.Equal(t, "first", c.Flag("flag").Value)
+	assert.Equal(t, "ffval", c.Commands[0].Flag("flag").Value)
 }
 
 func TestFlagFile2(t *testing.T) {
-	var ff bytes.Buffer
-	fopen = func(n string) (io.ReadCloser, error) {
-		return ioutil.NopCloser(&ff), nil
+	readFile = func(n string) ([]byte, error) {
+		return []byte(`--flag ffval`), nil
 	}
-	ff.Write([]byte(`--flag ffval`))
 
 	var ok bool
 
@@ -67,6 +62,6 @@ func TestFlagFile2(t *testing.T) {
 	err := c.run([]string{"first", "second", "--flag", "before", "--flagfile=qwe", "--flag=after"}, nil)
 	assert.NoError(t, err)
 	assert.True(t, ok)
-	assert.Equal(t, "first", *c.Flag("flag").Value.(*string))
-	assert.Equal(t, "after", *c.Commands[0].Flag("flag").Value.(*string))
+	assert.Equal(t, "first", c.Flag("flag").Value)
+	assert.Equal(t, "after", c.Commands[0].Flag("flag").Value)
 }

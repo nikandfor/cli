@@ -1,8 +1,12 @@
 module github.com/nikandfor/cli
 
-go 1.13
+go 1.17
 
 require (
-	github.com/nikandfor/errors v0.3.1-0.20201212142705-56fda2c0e8b3
-	github.com/stretchr/testify v1.6.1
+	github.com/nikandfor/assert v0.0.0-20220304153847-22d497fcbcb0
+	github.com/nikandfor/errors v0.5.1-0.20220304154616-1df269730b0b
 )
+
+require github.com/nikandfor/loc v0.2.0 // indirect
+
+//replace github.com/nikandfor/assert => ../assert

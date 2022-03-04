@@ -1,0 +1,104 @@
+package cli
+
+import (
+	"bufio"
+	"bytes"
+	"strings"
+
+	"github.com/nikandfor/errors"
+)
+
+var EnvfileFlag *Flag
+
+func init() {
+	EnvfileFlag = &Flag{
+		Name:        "envfile",
+		Description: "load env variables from file",
+		Action:      envfileFlagAction,
+	}
+}
+
+func envfileFlagAction(c *Command, f *Flag, arg string, args []string) (_ []string, err error) {
+	args, err = ParseFlagString(c, f, arg, args)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := readFile(f.Value.(string))
+	if err != nil {
+		return nil, errors.Wrap(err, "read file")
+	}
+
+	r := bufio.NewScanner(bytes.NewReader(data))
+	r.Split(bufio.ScanLines)
+
+	var env []string
+
+	for r.Scan() {
+		e := r.Text()
+		e = strings.TrimSpace(e)
+		if strings.HasPrefix(e, "#") {
+			continue
+		}
+
+		e = strings.TrimPrefix(e, "export ")
+		e = strings.TrimSpace(e)
+
+		env = append(env, e)
+	}
+
+	if err = r.Err(); err != nil {
+		return nil, errors.Wrap(err, "scan file")
+	}
+
+	_, err = c.parseEnv(env)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse env")
+	}
+
+	return args, nil
+}
+
+func ParseEnv(c *Command, env []string) (rest []string, err error) {
+	prefix := GetEnvPrefix(c)
+	if prefix == "" {
+		return env, nil
+	}
+
+	for i := 0; i < len(env); i++ {
+		if !strings.HasPrefix(env[i], prefix) {
+			rest = append(rest, env[i])
+
+			continue
+		}
+
+		e := strings.TrimPrefix(env[i], prefix)
+
+		p := strings.Index(e, "=")
+		if p == -1 {
+			e = varname(e)
+		} else {
+			e = varname(e[:p]) + e[p:]
+		}
+
+		_, err = c.parseFlag(e, nil)
+		if errors.Is(err, ErrNoSuchFlag) {
+			rest = append(rest, env[i])
+
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return rest, nil
+}
+
+func varname(s string) string {
+	s = strings.ToLower(s)
+
+	s = strings.ReplaceAll(s, "_", "-")
+
+	return s
+}

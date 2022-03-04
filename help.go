@@ -1,116 +1,79 @@
 package cli
 
 import (
+	"bytes"
 	"fmt"
-	"reflect"
-	"strings"
-	"text/template"
+
+	"github.com/nikandfor/errors"
 )
 
-var HelpFlag = &Flag{
-	Name:        "help,h",
-	Description: "show that message",
-	After:       defaultHelp,
-	Value:       boolptr(false),
-}
+var HelpFlag *Flag
 
-var funcs = map[string]interface{}{
-	"formatCmd": func(c *Command, full bool) string {
-		var b strings.Builder
-
-		pad := func(s, w int) {
-			if s >= w {
-				return
-			}
-
-			_, _ = b.WriteString("                                          "[:w-s])
-		}
-
-		_, _ = b.WriteString(c.Name)
-
-		if c.Usage != "" {
-			_, _ = b.WriteString(" ")
-			_, _ = b.WriteString(c.Usage)
-		}
-
-		pad(b.Len(), 25)
-
-		if c.Description != "" {
-			_, _ = b.WriteString(" - ")
-			_, _ = b.WriteString(c.Description)
-		}
-
-		if full && c.HelpText != "" {
-			_, _ = b.WriteString("\n\n")
-			_, _ = b.WriteString(c.HelpText)
-		}
-
-		return b.String()
-	},
-	"formatFlag": func(f *Flag) string {
-		var b strings.Builder
-
-		pad := func(s, w int) {
-			if s >= w {
-				return
-			}
-
-			_, _ = b.WriteString("                                          "[:w-s])
-		}
-
-		_, _ = b.WriteString(f.Name)
-
-		var val string
-		if f.Value != nil {
-			r := reflect.ValueOf(f.Value)
-			for r.Kind() == reflect.Ptr && !r.IsNil() {
-				r = r.Elem()
-			}
-
-			if !r.IsZero() {
-				val = fmt.Sprintf("=%v", r)
-			}
-		}
-
-		if val != "" {
-			_, _ = b.WriteString(val)
-		}
-
-		pad(b.Len(), 25)
-
-		if f.Description != "" {
-			_, _ = b.WriteString(" - ")
-			_, _ = b.WriteString(f.Description)
-		}
-
-		return b.String()
-	},
-}
-
-var commandHelpTemplate = template.Must(template.New("command help").Funcs(funcs).Parse(`{{ formatCmd . true }}
-{{ if .Commands }}
-Subcommands:
-{{- range .Commands }}
-    {{ if not .Hidden }}{{ formatCmd . false }}{{ end }}
-{{- end }}
-{{- end }}
-{{- if or .Flags .Parent }}
-Flags:
-{{- block "flags" . }}
-{{- range .Flags }}
-    {{ if not .Hidden }}{{ formatFlag . }}{{ end }}
-{{- end }}
-{{- with .Parent }}{{ template "flags" . }}{{ end }}
-{{- end }}
-{{- end }}
-`))
-
-func defaultHelp(f *Flag, c *Command) error {
-	err := commandHelpTemplate.Execute(stdout, c)
-	if err != nil {
-		return err
+func init() {
+	HelpFlag = &Flag{
+		Name:        "help,h",
+		Description: "print command help end exit",
+		Action:      defaultHelp,
 	}
-	return ErrFlagExit
 }
 
-func boolptr(v bool) *bool { return &v }
+func defaultHelp(c *Command, f *Flag, arg string, args []string) ([]string, error) {
+	b := new(bytes.Buffer)
+
+	fmt.Fprintf(b, "usage: %s", c.Name)
+
+	if c.Usage != "" {
+		fmt.Fprintf(b, " %s", c.Usage)
+	}
+
+	if c.Description != "" {
+		fmt.Fprintf(b, " - %s", c.Description)
+	}
+
+	fmt.Fprintf(b, "\n")
+
+	if c.Help != "" {
+		fmt.Fprintf(b, "\n%s\n", c.Help)
+	}
+
+	if len(c.Commands) != 0 {
+		fmt.Fprintf(b, "\nSubcommands\n\n")
+
+		for _, sub := range c.Commands {
+			fmt.Fprintf(b, "    %-20s", sub.Name)
+
+			if sub.Description != "" {
+				fmt.Fprintf(b, " - %s", sub.Description)
+			}
+
+			fmt.Fprintf(b, "\n")
+		}
+	}
+
+	if len(c.Flags) != 0 {
+		fmt.Fprintf(b, "\nFlags\n\n")
+
+		for c := c; c != nil; c = c.Parent {
+			for _, f := range c.Flags {
+				fmt.Fprintf(b, "    %-20s", f.Name)
+
+				if f.Description != "" {
+					fmt.Fprintf(b, " - %s", f.Description)
+				}
+
+				if f.Value != nil && f.Value != "" {
+					fmt.Fprintf(b, " (default %v)", f.Value)
+				}
+
+				fmt.Fprintf(b, "\n")
+			}
+		}
+	}
+
+	_, err := b.WriteTo(c)
+	if err != nil {
+		return nil, errors.Wrap(err, "write")
+	}
+
+	return nil, ErrFlagExit
+}
