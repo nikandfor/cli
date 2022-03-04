@@ -42,12 +42,6 @@ var ( // stdout/stderr
 	stderr io.Writer = os.Stderr
 )
 
-var ( // App
-	App = Command{
-		Name: os.Args[0],
-	}
-)
-
 func Chain(a ...Action) Action {
 	return func(c *Command) error {
 		for _, a := range a {
@@ -83,26 +77,11 @@ func SubcommandAlias(n string) Action {
 	}
 }
 
-func Run(args []string) error {
-	return App.run(args, os.Environ())
-}
-
-func RunAndExit(args []string) {
-	err := App.run(args, os.Environ())
-	if err == nil {
-		return
-	}
-
-	fmt.Fprintf(os.Stderr, "%v\n", err)
-
-	os.Exit(1)
-}
-
-func RunCommand(c *Command, args, env []string) error {
+func Run(c *Command, args, env []string) error {
 	return c.run(args, env)
 }
 
-func RunCommandAndExit(c *Command, args, env []string) {
+func RunAndExit(c *Command, args, env []string) {
 	err := c.run(args, env)
 	if err == nil {
 		return

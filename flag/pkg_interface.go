@@ -36,10 +36,7 @@ func Parse() {
 		cmd.Flags = append(cmd.Flags, cli.HelpFlag)
 	}
 
-	err := cli.RunCommand(&cmd, os.Args)
-	if err != nil {
-		panic(err)
-	}
+	cli.RunAndExit(&cmd, os.Args, os.Environ())
 }
 
 func Bool(name string, val bool, help string) *bool {
@@ -82,8 +79,5 @@ func Usage(name, usage string) {
 		cmd.Flags = append(cmd.Flags, cli.HelpFlag)
 	}
 
-	err := cli.RunCommand(&cmd, append(os.Args, "-h"))
-	if err != nil {
-		panic(err)
-	}
+	cli.RunAndExit(&cmd, append(os.Args, "-h"), os.Environ())
 }
