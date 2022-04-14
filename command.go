@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/nikandfor/errors"
-	"github.com/nikandfor/tlog"
 )
 
 type (
@@ -147,12 +146,8 @@ func (c *Command) run(args, env []string) (err error) {
 		args = args[:last-1]
 	}
 
-	tlog.Printw("run", "arg0", c.Arg0, "args", args, "comp", comp)
-
 	for len(args) != 0 {
 		arg := args[0]
-
-		tlog.Printw("args", "args", args)
 
 		if arg != "" && arg[0] == '-' && arg != "-" && arg != "--" {
 			args, err = c.parseFlag(arg, args[1:])
