@@ -14,6 +14,30 @@ var EnvfileFlag = &Flag{
 	Action:      envfile,
 }
 
+func (c *Command) Getenv(key string) (val string) {
+	val, _ = c.LookupEnv(key)
+	return
+}
+
+func (c *Command) LookupEnv(key string) (string, bool) {
+	for _, e := range c.Env {
+		p := strings.IndexAny(e, "= ")
+		if p == -1 {
+			p = len(e)
+		}
+
+		if key == e[:p] {
+			if p < len(e) {
+				return e[p+1:], true
+			} else {
+				return "", true
+			}
+		}
+	}
+
+	return "", false
+}
+
 func envfile(c *Command, f *Flag, arg string, args []string) (_ []string, err error) {
 	args, err = ParseFlagString(c, f, arg, args)
 	if err != nil {
@@ -48,10 +72,12 @@ func envfile(c *Command, f *Flag, arg string, args []string) (_ []string, err er
 		return nil, errors.Wrap(err, "scan file")
 	}
 
-	_, err = c.parseEnv(env)
+	env, err = c.parseEnv(env)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse env")
 	}
+
+	c.Env = append(c.Env, env...)
 
 	return args, nil
 }

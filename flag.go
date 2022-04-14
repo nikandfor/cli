@@ -16,10 +16,12 @@ type (
 		Description string
 		Help        string
 
-		Action FlagAction
+		Action   FlagAction
+		Complete FlagAction
 
 		Hidden    bool
 		Mandatory bool
+		Local     bool // do not inherited by child
 
 		Value interface{}
 
@@ -81,6 +83,10 @@ func NewFlag(name string, val interface{}, help string, opts ...FlagOption) (f *
 		f.Action = ParseFlagValue(val, true, false)
 	default:
 		panic(fmt.Sprintf("unsupported value type: %T", val))
+	}
+
+	for _, o := range opts {
+		o(f)
 	}
 
 	return f
@@ -275,7 +281,7 @@ func ParseFlagVal(arg string, args []string, eatnext, optional bool) (val string
 	return
 }
 
-func ParseFlagArg(arg string, args []string, eatnext, optional bool) (k, val string, dashes int, _ []string, err error) {
+func ParseFlagArg(arg string, args []string, eatnext, optional bool) (key, val string, dashes int, _ []string, err error) {
 	for dashes < len(arg) && arg[dashes] == '-' {
 		dashes++
 	}
@@ -285,7 +291,7 @@ func ParseFlagArg(arg string, args []string, eatnext, optional bool) (k, val str
 		end++
 	}
 
-	k = arg[dashes:end]
+	key = arg[dashes:end]
 
 	switch {
 	case end < len(arg):
@@ -305,7 +311,7 @@ func ParseFlagArg(arg string, args []string, eatnext, optional bool) (k, val str
 		return
 	}
 
-	return k, val, dashes, args, nil
+	return key, val, dashes, args, nil
 }
 
 func (f *Flag) check() error {

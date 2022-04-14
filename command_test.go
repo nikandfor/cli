@@ -140,3 +140,33 @@ Possible multiline.
 
 	assert.Equal(t, ``, buf.String())
 }
+
+func TestDoubleDash(t *testing.T) {
+	var ok bool
+	var buf bytes.Buffer
+
+	c := &Command{
+		Name:        "long,l",
+		Description: "test command",
+		Args:        Args{},
+		Action:      func(*Command) error { ok = true; return nil },
+		Help: `Some long descriptive help message here.
+Possible multiline.
+    With paddings.`,
+		//	Commands: []*Command{},
+		Flags: []*Flag{
+			NewFlag("flag,f,ff", 0, "some flag"),
+		},
+
+		Stderr: &buf,
+	}
+	assert.NotNil(t, c.Args) // require
+
+	err := c.run([]string{"base", "first", "--", "a", "--flag"}, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, Args{"first", "a", "--flag"}, c.Args)
+
+	assert.True(t, ok, "expected command not called")
+
+	assert.Equal(t, ``, buf.String())
+}

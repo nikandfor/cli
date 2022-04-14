@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/nikandfor/errors"
+	"github.com/nikandfor/tlog"
 )
 
 type (
@@ -16,8 +18,12 @@ type (
 
 		Parent *Command
 
+		OSArgs []string
+		OSEnv  []string
+
 		Arg0 string // command name
 		Args Args
+		Env  []string // env vars not used for local flags
 
 		// User options
 
@@ -62,6 +68,14 @@ func Run(c *Command, args, env []string) (err error) {
 }
 
 func RunAndExit(c *Command, args, env []string) {
+	{
+		c.Env = env
+
+		if err := beforeComplete(c); err != nil {
+			panic(err)
+		}
+	}
+
 	err := c.run(args, env)
 	if err == nil {
 		return
@@ -112,6 +126,9 @@ func (c *Command) run(args, env []string) (err error) {
 		}
 	}()
 
+	c.OSArgs = args
+	c.OSEnv = env
+
 	c.Arg0 = args[0]
 	args = args[1:]
 
@@ -120,34 +137,46 @@ func (c *Command) run(args, env []string) (err error) {
 		return errors.WrapNoLoc(err, "setup")
 	}
 
-	if len(env) != 0 {
-		env, err = c.parseEnv(env)
-		if err != nil {
-			return errors.WrapNoLoc(err, "parse env")
-		}
+	c.Env, err = c.parseEnv(env)
+	if err != nil {
+		return errors.WrapNoLoc(err, "parse env")
 	}
+
+	last, comp := c.completeIndex()
+	if comp && c.Parent == nil {
+		args = args[:last-1]
+	}
+
+	tlog.Printw("run", "arg0", c.Arg0, "args", args, "comp", comp)
 
 	for len(args) != 0 {
 		arg := args[0]
 
-		switch {
-		case arg != "" && arg[0] == '-' && arg != "-":
+		tlog.Printw("args", "args", args)
+
+		if arg != "" && arg[0] == '-' && arg != "-" && arg != "--" {
 			args, err = c.parseFlag(arg, args[1:])
 			if err != nil {
 				return errors.WrapNoLoc(err, "parse flag: %v", arg)
 			}
-		case len(c.Commands) != 0:
-			sub := c.Command(arg)
-			if sub == nil {
-				return errors.Wrap(ErrNoSuchCommand, "%v", arg)
-			}
 
-			err = sub.run(args, env)
+			continue
+		}
+
+		if sub := c.Command(arg); sub != nil {
+			err = sub.run(args, c.Env)
 
 			return errors.WrapNoLoc(err, MainName(sub.Name))
-		case c.Args == nil:
+		}
+
+		if c.Args == nil {
 			return fmt.Errorf("%w, got %v", ErrNoArgsExpected, arg)
-		default:
+		}
+
+		if arg == "--" {
+			c.Args = append(c.Args, args[1:]...)
+			args = nil
+		} else {
 			c.Args = append(c.Args, arg)
 			args = args[1:]
 		}
@@ -168,6 +197,10 @@ func (c *Command) run(args, env []string) (err error) {
 			err = errors.WrapNoLoc(e, "after")
 		}
 	}()
+
+	if comp {
+		return c.complete()
+	}
 
 	if c.Action == nil {
 		_, err = defaultHelp(c, nil, "", nil)
@@ -213,6 +246,28 @@ func (c *Command) parseEnv(env []string) (rest []string, err error) {
 	}
 
 	return ParseEnv(c, env)
+}
+
+func (c *Command) completeIndex() (int, bool) {
+	x, ok := c.LookupEnv("CLI_COMP_WORDS_INDEX")
+	if !ok {
+		return 0, false
+	}
+
+	i, err := strconv.ParseInt(x, 10, 32)
+	if err != nil {
+		return 0, false
+	}
+
+	return int(i), true
+}
+
+func (c *Command) complete() error {
+	if c.Complete != nil {
+		return c.Complete(c)
+	}
+
+	return Complete(c)
 }
 
 func GetEnvPrefix(c *Command) string {
@@ -323,4 +378,18 @@ func MainName(n string) string {
 	}
 
 	return n[:p]
+}
+
+func FullName(c *Command) (r []string) {
+	return fullName(c, r)
+}
+
+func fullName(c *Command, r []string) []string {
+	if c == nil {
+		return r
+	}
+
+	r = fullName(c.Parent, r)
+
+	return append(r, MainName(c.Name))
 }

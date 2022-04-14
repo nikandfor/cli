@@ -12,15 +12,28 @@ var HelpFlag *Flag
 func init() {
 	HelpFlag = &Flag{
 		Name:        "help,h",
+		Usage:       "=[hidden]",
 		Description: "print command help end exit",
 		Action:      defaultHelp,
 	}
 }
 
-func defaultHelp(c *Command, f *Flag, arg string, args []string) ([]string, error) {
+func defaultHelp(c *Command, f *Flag, arg string, args []string) (rest []string, err error) {
+	_, v, _, rest, err := ParseFlagArg(arg, args, false, true)
+	if err != nil {
+		return
+	}
+
+	hidden := v == "hidden"
+
 	b := new(bytes.Buffer)
 
-	fmt.Fprintf(b, "usage: %s", c.Name)
+	//	full := FullName(c.Parent)
+	//	if full != nil {
+	//		fmt.Fprintf(b, "%s ", strings.Join(full, " "))
+	//	}
+
+	fmt.Fprintf(b, "%s", c.Name)
 
 	if c.Usage != "" {
 		fmt.Fprintf(b, " %s", c.Usage)
@@ -37,9 +50,24 @@ func defaultHelp(c *Command, f *Flag, arg string, args []string) ([]string, erro
 	}
 
 	if len(c.Commands) != 0 {
-		fmt.Fprintf(b, "\nSubcommands\n\n")
+		cnt := 0
+		for _, sub := range c.Commands {
+			if sub.Hidden && !hidden {
+				continue
+			}
+
+			cnt++
+		}
+
+		if cnt != 0 {
+			fmt.Fprintf(b, "\nSubcommands\n")
+		}
 
 		for _, sub := range c.Commands {
+			if sub.Hidden && !hidden {
+				continue
+			}
+
 			fmt.Fprintf(b, "    %-20s", sub.Name)
 
 			if sub.Description != "" {
@@ -50,27 +78,52 @@ func defaultHelp(c *Command, f *Flag, arg string, args []string) ([]string, erro
 		}
 	}
 
-	if len(c.Flags) != 0 {
-		fmt.Fprintf(b, "\nFlags\n\n")
-
-		for c := c; c != nil; c = c.Parent {
-			for _, f := range c.Flags {
-				fmt.Fprintf(b, "    %-20s", f.Name)
-
-				if f.Description != "" {
-					fmt.Fprintf(b, " - %s", f.Description)
-				}
-
-				if f.Value != nil && f.Value != "" {
-					fmt.Fprintf(b, " (default %v)", f.Value)
-				}
-
-				fmt.Fprintf(b, "\n")
+	for cc := c; cc != nil; cc = cc.Parent {
+		cnt := 0
+		for _, f := range cc.Flags {
+			if f.Hidden && !hidden || cc != c && f.Local {
+				continue
 			}
+
+			cnt++
+		}
+
+		if cnt == 0 {
+			continue
+		}
+
+		if cc == c {
+			fmt.Fprintf(b, "\nFlags\n")
+		} else {
+			fmt.Fprintf(b, "\nFlags of parent command %v\n", cc.MainName())
+		}
+
+		for _, f := range cc.Flags {
+			if f.Hidden && !hidden || cc != c && f.Local {
+				continue
+			}
+
+			name := f.Name
+
+			if f.Usage != "" {
+				name += f.Usage
+			}
+
+			fmt.Fprintf(b, "    %-20s", name)
+
+			if f.Description != "" {
+				fmt.Fprintf(b, " - %s", f.Description)
+			}
+
+			if f.Value != nil && f.Value != "" {
+				fmt.Fprintf(b, " (default %v)", f.Value)
+			}
+
+			fmt.Fprintf(b, "\n")
 		}
 	}
 
-	_, err := b.WriteTo(c)
+	_, err = b.WriteTo(c)
 	if err != nil {
 		return nil, errors.Wrap(err, "write")
 	}
