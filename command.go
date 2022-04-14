@@ -134,12 +134,12 @@ func (c *Command) run(args, env []string) (err error) {
 
 	err = c.setup()
 	if err != nil {
-		return errors.WrapNoLoc(err, "setup")
+		return errors.WrapNoCaller(err, "setup")
 	}
 
 	c.Env, err = c.parseEnv(env)
 	if err != nil {
-		return errors.WrapNoLoc(err, "parse env")
+		return errors.WrapNoCaller(err, "parse env")
 	}
 
 	last, comp := c.completeIndex()
@@ -157,7 +157,7 @@ func (c *Command) run(args, env []string) (err error) {
 		if arg != "" && arg[0] == '-' && arg != "-" && arg != "--" {
 			args, err = c.parseFlag(arg, args[1:])
 			if err != nil {
-				return errors.WrapNoLoc(err, "parse flag: %v", arg)
+				return errors.WrapNoCaller(err, "parse flag: %v", arg)
 			}
 
 			continue
@@ -166,7 +166,7 @@ func (c *Command) run(args, env []string) (err error) {
 		if sub := c.Command(arg); sub != nil {
 			err = sub.run(args, c.Env)
 
-			return errors.WrapNoLoc(err, MainName(sub.Name))
+			return errors.WrapNoCaller(err, MainName(sub.Name))
 		}
 
 		if c.Args == nil {
@@ -183,18 +183,18 @@ func (c *Command) run(args, env []string) (err error) {
 	}
 
 	if err = c.check(); err != nil {
-		return errors.WrapNoLoc(err, "check")
+		return errors.WrapNoCaller(err, "check")
 	}
 
 	err = c.runBefore()
 	if err != nil {
-		return errors.WrapNoLoc(err, "before")
+		return errors.WrapNoCaller(err, "before")
 	}
 
 	defer func() {
 		e := c.runAfter()
 		if err == nil {
-			err = errors.WrapNoLoc(e, "after")
+			err = errors.WrapNoCaller(e, "after")
 		}
 	}()
 
@@ -204,7 +204,7 @@ func (c *Command) run(args, env []string) (err error) {
 
 	if c.Action == nil {
 		_, err = defaultHelp(c, nil, "", nil)
-		return errors.WrapNoLoc(err, "help")
+		return errors.WrapNoCaller(err, "help")
 	}
 
 	return c.Action(c)
@@ -285,7 +285,7 @@ func GetEnvPrefix(c *Command) string {
 func (c *Command) runBefore() (err error) {
 	if c.Parent != nil {
 		if err = c.Parent.runBefore(); err != nil {
-			return errors.WrapNoLoc(err, "%v", MainName(c.Parent.Name))
+			return errors.WrapNoCaller(err, "%v", MainName(c.Parent.Name))
 		}
 	}
 	if c.Before != nil {
@@ -304,7 +304,7 @@ func (c *Command) runAfter() (err error) {
 	}
 	if c.Parent != nil {
 		if err = c.Parent.runAfter(); err != nil {
-			return errors.WrapNoLoc(err, "%v", MainName(c.Parent.Name))
+			return errors.WrapNoCaller(err, "%v", MainName(c.Parent.Name))
 		}
 	}
 	return nil
@@ -313,7 +313,7 @@ func (c *Command) runAfter() (err error) {
 func (c *Command) check() (err error) {
 	for _, f := range c.Flags {
 		if err = f.check(); err != nil {
-			return errors.WrapNoLoc(err, "")
+			return errors.WrapNoCaller(err, "")
 		}
 	}
 
