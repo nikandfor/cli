@@ -67,7 +67,7 @@ func Run(c *Command, args, env []string) (err error) {
 }
 
 func RunAndExit(c *Command, args, env []string) {
-	{
+	if false {
 		c.Env = env
 
 		if err := beforeComplete(c); err != nil {
