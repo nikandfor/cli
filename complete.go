@@ -118,7 +118,7 @@ func Complete(c *Command) (err error) {
 		repl[i] = strconv.Quote(repl[i])
 	}
 
-	fmt.Fprintf(c, "COMPREPLY=( $(compgen -W '%[2]s' -- %[1]s) )", current, strings.Join(repl, " "))
+	fmt.Fprintf(c.Stdout, "COMPREPLY=( $(compgen -W '%[2]s' -- %[1]s) )", current, strings.Join(repl, " "))
 
 	//	fmt.Fprintf(c, "COMPREPLY=(%s)", strings.Join(repl, " "))
 
@@ -136,7 +136,7 @@ func completeAuto(c *Command) error {
 		root = root.Parent
 	}
 
-	return complete.ExecTemplate(c, sh, root.OSArgs)
+	return complete.ExecTemplate(c.Stdout, sh, root.OSArgs)
 }
 
 func completeBash(c *Command) error {
@@ -145,7 +145,7 @@ func completeBash(c *Command) error {
 		root = root.Parent
 	}
 
-	return complete.ExecTemplate(c, "bash", root.OSArgs)
+	return complete.ExecTemplate(c.Stdout, "bash", root.OSArgs)
 }
 
 func completeZsh(c *Command) error {
@@ -154,5 +154,5 @@ func completeZsh(c *Command) error {
 		root = root.Parent
 	}
 
-	return complete.ExecTemplate(c, "zsh", root.OSArgs)
+	return complete.ExecTemplate(c.Stdout, "zsh", root.OSArgs)
 }

@@ -136,12 +136,12 @@ func greet(c *cli.Command) error {
 		return errors.Wrap(err, "parse template")
 	}
 
-	err = t.Execute(c, c)
+	err = t.Execute(c.Stdout, c)
 	if err != nil {
 		return errors.Wrap(err, "execute template")
 	}
 
-	_, err = c.Writer.Write([]byte{'\n'})
+	_, err = c.Stdout.Write([]byte{'\n'})
 	if err != nil {
 		return errors.Wrap(err, "write newline")
 	}
@@ -196,7 +196,7 @@ func list(c *cli.Command) error {
 			return errors.Wrap(err, "decode greeting")
 		}
 
-		fmt.Fprintf(c, "%d: %s\n", n, raw)
+		fmt.Fprintf(c.Stdout, "%d: %s\n", n, raw)
 	}
 
 	return nil
@@ -250,12 +250,12 @@ func exec(c *cli.Command) (err error) {
 		return errors.Wrap(err, "parse template")
 	}
 
-	err = t.Execute(c, c)
+	err = t.Execute(c.Stdout, c)
 	if err != nil {
 		return errors.Wrap(err, "execute template")
 	}
 
-	_, err = c.Writer.Write([]byte{'\n'})
+	_, err = c.Stdout.Write([]byte{'\n'})
 	if err != nil {
 		return errors.Wrap(err, "write newline")
 	}

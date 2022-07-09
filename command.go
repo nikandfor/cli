@@ -48,8 +48,8 @@ type (
 		ParseEnv  func(c *Command, env []string) ([]string, error)
 		ParseFlag func(c *Command, arg string, args []string) ([]string, error)
 
-		io.Writer // Strout
-		Stderr    io.Writer
+		Stdout io.Writer
+		Stderr io.Writer
 	}
 
 	Action func(c *Command) error
@@ -206,11 +206,11 @@ func (c *Command) run(args, env []string) (err error) {
 }
 
 func (c *Command) setup() error {
-	if c.Writer == nil {
+	if c.Stdout == nil {
 		if c.Parent != nil {
-			c.Writer = c.Parent.Writer
+			c.Stdout = c.Parent.Stdout
 		} else {
-			c.Writer = os.Stdout
+			c.Stdout = os.Stdout
 		}
 	}
 

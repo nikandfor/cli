@@ -123,7 +123,7 @@ func defaultHelp(c *Command, f *Flag, arg string, args []string) (rest []string,
 		}
 	}
 
-	_, err = b.WriteTo(c)
+	_, err = b.WriteTo(c.Stdout)
 	if err != nil {
 		return nil, errors.Wrap(err, "write")
 	}

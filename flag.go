@@ -79,6 +79,8 @@ func NewFlag(name string, val interface{}, help string, opts ...FlagOption) (f *
 		f.Action = ParseFlagUint64
 	case string:
 		f.Action = ParseFlagString
+	case []string:
+		f.Action = ParseFlagStringSlice
 	case Setter:
 		f.Action = ParseFlagValue(val, true, false)
 	default:
@@ -214,6 +216,31 @@ func ParseFlagString(c *Command, f *Flag, arg string, args []string) ([]string, 
 	}, true, false)
 
 	return act(c, f, arg, args)
+}
+
+func ParseFlagStringSlice(c *Command, f *Flag, arg string, args []string) ([]string, error) {
+	val, args, err := ParseFlagVal(arg, args, true, false)
+	if err != nil {
+		return args, err
+	}
+
+	vals := strings.Split(val, ",")
+
+	if !f.IsSet {
+		f.IsSet = true
+		f.Value = nil
+	}
+
+	if f.Value == nil {
+		f.Value = vals
+		return args, nil
+	}
+
+	have := f.Value.([]string)
+
+	f.Value = append(have, vals...)
+
+	return args, nil
 }
 
 func ParseFlagUint(c *Command, f *Flag, arg string, args []string) ([]string, error) {
