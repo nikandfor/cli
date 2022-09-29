@@ -37,6 +37,10 @@ func defaultHelp(c *Command, f *Flag, arg string, args []string) (rest []string,
 
 	if c.Usage != "" {
 		fmt.Fprintf(b, " %s", c.Usage)
+	} else if c.Args != nil {
+		fmt.Fprintf(b, " [flags_and_args]")
+	} else {
+		fmt.Fprintf(b, " [flags]")
 	}
 
 	if c.Description != "" {
