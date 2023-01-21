@@ -132,5 +132,5 @@ func defaultHelp(c *Command, f *Flag, arg string, args []string) (rest []string,
 		return nil, errors.Wrap(err, "write")
 	}
 
-	return nil, ErrFlagExit
+	return nil, ErrExit
 }

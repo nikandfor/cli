@@ -120,7 +120,7 @@ func (c *Command) Flag(n string) *Flag {
 
 func (c *Command) run(args, env []string) (err error) {
 	defer func() {
-		if errors.Is(err, ErrFlagExit) {
+		if errors.Is(err, ErrExit) {
 			err = nil
 		}
 	}()
@@ -178,7 +178,7 @@ func (c *Command) run(args, env []string) (err error) {
 	}
 
 	if err = c.check(); err != nil {
-		return errors.WrapNoCaller(err, "check")
+		return errors.WrapNoCaller(err, "check flags")
 	}
 
 	err = c.runBefore()
@@ -308,7 +308,7 @@ func (c *Command) runAfter() (err error) {
 func (c *Command) check() (err error) {
 	for _, f := range c.Flags {
 		if err = f.check(); err != nil {
-			return errors.WrapNoCaller(err, "")
+			return errors.WrapNoCaller(err, f.MainName())
 		}
 	}
 

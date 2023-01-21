@@ -39,7 +39,7 @@ type (
 )
 
 var (
-	ErrFlagExit           = errors.New("flag exit")
+	ErrExit               = errors.New("exit") // to stop command execution from flag or before handler
 	ErrFlagMandatory      = errors.New("flag is mandatory")
 	ErrFlagValueRequired  = errors.New("flag value required")
 	ErrFlagActionRequired = errors.New("flag action required")
