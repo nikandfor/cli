@@ -161,7 +161,7 @@ func (c *Command) run(args, env []string) (err error) {
 		if sub := c.Command(arg); sub != nil {
 			err = sub.run(args, c.Env)
 
-			return errors.WrapNoCaller(err, MainName(sub.Name))
+			return errors.WrapNoCaller(err, MainName(arg))
 		}
 
 		if c.Args == nil {
