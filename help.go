@@ -19,7 +19,7 @@ func init() {
 }
 
 func defaultHelp(c *Command, f *Flag, arg string, args []string) (rest []string, err error) {
-	_, v, _, rest, err := ParseFlagArg(arg, args, false, true)
+	_, v, rest, err := ParseFlagArg(arg, args, false, true)
 	if err != nil {
 		return
 	}

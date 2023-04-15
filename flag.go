@@ -19,8 +19,8 @@ type (
 		Action   FlagAction
 		Complete FlagAction
 
-		Hidden    bool
-		Mandatory bool
+		Hidden    bool // not shown in a help by default
+		Mandatory bool // must be set
 		Local     bool // do not inherited by child
 
 		Value interface{}
@@ -82,6 +82,7 @@ func NewFlag(name string, val interface{}, help string, opts ...FlagOption) (f *
 	case []string:
 		f.Action = ParseFlagStringSlice
 	case Setter:
+		f.Value = nil
 		f.Action = ParseFlagValue(val, true, false)
 	default:
 		panic(fmt.Sprintf("unsupported value type: %T", val))
@@ -124,7 +125,7 @@ func DefaultParseFlag(c *Command, arg string, args []string) (nextArgs []string,
 // typed flag parsers
 
 func ParseFlagBool(c *Command, f *Flag, arg string, args []string) ([]string, error) {
-	val, args, err := ParseFlagVal(arg, args, false, true)
+	_, val, args, err := ParseFlagArg(arg, args, false, true)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +220,7 @@ func ParseFlagString(c *Command, f *Flag, arg string, args []string) ([]string, 
 }
 
 func ParseFlagStringSlice(c *Command, f *Flag, arg string, args []string) ([]string, error) {
-	val, args, err := ParseFlagVal(arg, args, true, false)
+	_, val, args, err := ParseFlagArg(arg, args, true, false)
 	if err != nil {
 		return args, err
 	}
@@ -284,7 +285,7 @@ func ParseFlagValue(v Setter, eatnext, optional bool) FlagAction {
 
 func ParseFlagFunc(p func(string) (interface{}, error), eatnext, optional bool) FlagAction {
 	return func(c *Command, f *Flag, arg string, args []string) (_ []string, err error) {
-		val, args, err := ParseFlagVal(arg, args, eatnext, optional)
+		_, val, args, err := ParseFlagArg(arg, args, eatnext, optional)
 		if err != nil {
 			return args, err
 		}
@@ -303,13 +304,9 @@ func ParseFlagFunc(p func(string) (interface{}, error), eatnext, optional bool) 
 
 //
 
-func ParseFlagVal(arg string, args []string, eatnext, optional bool) (val string, nextargs []string, err error) {
-	_, val, _, nextargs, err = ParseFlagArg(arg, args, eatnext, optional)
-	return
-}
-
-func ParseFlagArg(arg string, args []string, eatnext, optional bool) (key, val string, dashes int, _ []string, err error) {
-	for dashes < len(arg) && arg[dashes] == '-' {
+func ParseFlagArg(arg string, args []string, eatnext, optional bool) (key, val string, _ []string, err error) {
+	dashes := 0
+	for dashes < 2 && dashes < len(arg) && arg[dashes] == '-' {
 		dashes++
 	}
 
@@ -322,23 +319,19 @@ func ParseFlagArg(arg string, args []string, eatnext, optional bool) (key, val s
 
 	switch {
 	case end < len(arg):
-		vst := end
-		if vst < len(arg) && (arg[vst] == '=' || arg[vst] == ' ') {
-			vst++
-		}
-
+		vst := end + 1
 		val = arg[vst:]
 	case eatnext && len(args) != 0:
 		val = args[0]
 		args = args[1:]
 	case optional:
-		//
+		// no value
 	default:
 		err = ErrFlagValueRequired
 		return
 	}
 
-	return key, val, dashes, args, nil
+	return key, val, args, nil
 }
 
 func (f *Flag) check() error {
