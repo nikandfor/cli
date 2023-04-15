@@ -1,6 +1,10 @@
 package cli
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/nikandfor/cli/flag"
+)
 
 func Version(ver, commit, date string) *Command {
 	return &Command{
@@ -30,9 +34,9 @@ func Version(ver, commit, date string) *Command {
 			return nil
 		},
 		Flags: []*Flag{
-			NewFlag("short", false, "prints only version tag"),
-			NewFlag("commit", false, "prints only commit hash"),
-			NewFlag("date", false, "prints only date"),
+			flag.New("short", false, "prints only version tag"),
+			flag.New("commit", false, "prints only commit hash"),
+			flag.New("date", false, "prints only date"),
 		},
 	}
 }

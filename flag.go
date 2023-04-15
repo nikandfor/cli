@@ -1,107 +1,46 @@
 package cli
 
 import (
-	"errors"
-	"fmt"
-	"strconv"
-	"strings"
-	"time"
+	stderrors "errors"
+
+	"github.com/nikandfor/cli/flag"
 )
 
 type (
-	Flag struct {
-		Name        string
-		Group       string
-		Usage       string
-		Description string
-		Help        string
-
-		Action   FlagAction
-		Complete FlagAction
-
-		Hidden    bool // not shown in a help by default
-		Mandatory bool // must be set
-		Local     bool // do not inherited by child
-
-		Value interface{}
-
-		IsSet bool
-	}
-
-	// Setter is subset of stdlib flag.Value interface
-	Setter interface {
-		Set(v string) error
-	}
-
-	FlagAction func(c *Command, f *Flag, arg string, args []string) ([]string, error)
-
-	FlagOption = func(f *Flag)
+	Flag = flag.Flag
 )
 
 var (
-	ErrExit               = errors.New("exit") // to stop command execution from flag or before handler
-	ErrFlagMandatory      = errors.New("flag is mandatory")
-	ErrFlagValueRequired  = errors.New("flag value required")
-	ErrFlagActionRequired = errors.New("flag action required")
-	ErrNoSuchFlag         = errors.New("no such flag")
+	ErrExit       = stderrors.New("exit") // to stop command execution from flag or before handler
+	ErrNoSuchFlag = stderrors.New("no such flag")
 )
 
-func NewFlag(name string, val interface{}, help string, opts ...FlagOption) (f *Flag) {
-	f = &Flag{
-		Name:        name,
-		Description: help,
-
-		Value: val,
-	}
-
-	switch val := val.(type) {
-	case FlagAction:
-		f.Value = nil
-		f.Action = val
-	case func(c *Command, f *Flag, arg string, args []string) ([]string, error):
-		f.Value = nil
-		f.Action = FlagAction(val)
-	case bool:
-		f.Action = ParseFlagBool
-	case time.Duration:
-		f.Action = ParseFlagDuration
-	case float64:
-		f.Action = ParseFlagFloat64
-	case float32:
-		f.Action = ParseFlagFloat32
-	case int:
-		f.Action = ParseFlagInt
-	case uint:
-		f.Action = ParseFlagUint
-	case int64:
-		f.Action = ParseFlagInt64
-	case uint64:
-		f.Action = ParseFlagUint64
-	case string:
-		f.Action = ParseFlagString
-	case []string:
-		f.Action = ParseFlagStringSlice
-	case Setter:
-		f.Value = nil
-		f.Action = ParseFlagValue(val, true, false)
-	default:
-		panic(fmt.Sprintf("unsupported value type: %T", val))
-	}
-
-	for _, o := range opts {
-		o(f)
-	}
-
-	return f
+var DefaultFlags = []*Flag{
+	FlagfileFlag,
+	EnvfileFlag,
+	HelpFlag,
 }
 
-func (f *Flag) MainName() string {
-	return MainName(f.Name)
+func NewFlag(name string, val interface{}, help string, opts ...flag.Option) (f *Flag) {
+	return flag.New(name, val, help, opts...)
 }
 
 func DefaultParseFlag(c *Command, arg string, args []string) (nextArgs []string, err error) {
+	name := flagName(arg)
+
+	f := c.Flag(name)
+	if f == nil {
+		return nil, ErrNoSuchFlag
+	}
+
+	f.CurrentCommand = c
+
+	return f.Action(f, arg, args)
+}
+
+func flagName(arg string) string {
 	st := 0
-	for st < len(arg) && arg[st] == '-' {
+	for st < 2 && st < len(arg) && arg[st] == '-' {
 		st++
 	}
 
@@ -110,234 +49,5 @@ func DefaultParseFlag(c *Command, arg string, args []string) (nextArgs []string,
 		end++
 	}
 
-	f := c.Flag(arg[st:end])
-	if f == nil {
-		return nil, ErrNoSuchFlag
-	}
-
-	if f.Action == nil {
-		return nil, ErrFlagActionRequired
-	}
-
-	return f.Action(c, f, arg, args)
-}
-
-// typed flag parsers
-
-func ParseFlagBool(c *Command, f *Flag, arg string, args []string) ([]string, error) {
-	_, val, args, err := ParseFlagArg(arg, args, false, true)
-	if err != nil {
-		return nil, err
-	}
-
-	val = strings.ToLower(val)
-
-	switch val {
-	case "true", "t", "yes", "y", "":
-		f.Value = true
-	case "false", "f", "no", "n":
-		f.Value = false
-	default:
-		return nil, errors.New("not a bool value")
-	}
-
-	f.IsSet = true
-
-	return args, nil
-}
-
-func ParseFlagDuration(c *Command, f *Flag, arg string, args []string) ([]string, error) {
-	act := ParseFlagFunc(func(val string) (_ interface{}, err error) {
-		v, err := time.ParseDuration(val)
-		if err != nil {
-			return nil, err
-		}
-
-		return v, nil
-	}, true, false)
-
-	return act(c, f, arg, args)
-}
-
-func ParseFlagFloat64(c *Command, f *Flag, arg string, args []string) ([]string, error) {
-	act := ParseFlagFunc(func(val string) (_ interface{}, err error) {
-		v, err := strconv.ParseFloat(val, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		return v, nil
-	}, true, false)
-
-	return act(c, f, arg, args)
-}
-
-func ParseFlagFloat32(c *Command, f *Flag, arg string, args []string) ([]string, error) {
-	act := ParseFlagFunc(func(val string) (_ interface{}, err error) {
-		v, err := strconv.ParseFloat(val, 32)
-		if err != nil {
-			return nil, err
-		}
-
-		return float32(v), nil
-	}, true, false)
-
-	return act(c, f, arg, args)
-}
-
-func ParseFlagInt(c *Command, f *Flag, arg string, args []string) ([]string, error) {
-	act := ParseFlagFunc(func(val string) (_ interface{}, err error) {
-		v, err := strconv.ParseInt(val, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		return int(v), nil
-	}, true, false)
-
-	return act(c, f, arg, args)
-}
-
-func ParseFlagInt64(c *Command, f *Flag, arg string, args []string) ([]string, error) {
-	act := ParseFlagFunc(func(val string) (_ interface{}, err error) {
-		v, err := strconv.ParseInt(val, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		return v, nil
-	}, true, false)
-
-	return act(c, f, arg, args)
-}
-
-func ParseFlagString(c *Command, f *Flag, arg string, args []string) ([]string, error) {
-	act := ParseFlagFunc(func(val string) (_ interface{}, err error) {
-		return val, nil
-	}, true, false)
-
-	return act(c, f, arg, args)
-}
-
-func ParseFlagStringSlice(c *Command, f *Flag, arg string, args []string) ([]string, error) {
-	_, val, args, err := ParseFlagArg(arg, args, true, false)
-	if err != nil {
-		return args, err
-	}
-
-	vals := strings.Split(val, ",")
-
-	if !f.IsSet {
-		f.IsSet = true
-		f.Value = nil
-	}
-
-	if f.Value == nil {
-		f.Value = vals
-		return args, nil
-	}
-
-	have := f.Value.([]string)
-
-	f.Value = append(have, vals...)
-
-	return args, nil
-}
-
-func ParseFlagUint(c *Command, f *Flag, arg string, args []string) ([]string, error) {
-	act := ParseFlagFunc(func(val string) (_ interface{}, err error) {
-		v, err := strconv.ParseUint(val, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		return uint(v), nil
-	}, true, false)
-
-	return act(c, f, arg, args)
-}
-
-func ParseFlagUint64(c *Command, f *Flag, arg string, args []string) ([]string, error) {
-	act := ParseFlagFunc(func(val string) (_ interface{}, err error) {
-		v, err := strconv.ParseUint(val, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		return v, nil
-	}, true, false)
-
-	return act(c, f, arg, args)
-}
-
-//
-
-func ParseFlagValue(v Setter, eatnext, optional bool) FlagAction {
-	return ParseFlagFunc(func(val string) (_ interface{}, err error) {
-		err = v.Set(val)
-		if err != nil {
-			return
-		}
-
-		return v, nil
-	}, eatnext, optional)
-}
-
-func ParseFlagFunc(p func(string) (interface{}, error), eatnext, optional bool) FlagAction {
-	return func(c *Command, f *Flag, arg string, args []string) (_ []string, err error) {
-		_, val, args, err := ParseFlagArg(arg, args, eatnext, optional)
-		if err != nil {
-			return args, err
-		}
-
-		v, err := p(val)
-		if err != nil {
-			return nil, err
-		}
-
-		f.Value = v
-		f.IsSet = true
-
-		return args, nil
-	}
-}
-
-//
-
-func ParseFlagArg(arg string, args []string, eatnext, optional bool) (key, val string, _ []string, err error) {
-	dashes := 0
-	for dashes < 2 && dashes < len(arg) && arg[dashes] == '-' {
-		dashes++
-	}
-
-	end := dashes
-	for end < len(arg) && arg[end] != '=' && arg[end] != ' ' {
-		end++
-	}
-
-	key = arg[dashes:end]
-
-	switch {
-	case end < len(arg):
-		vst := end + 1
-		val = arg[vst:]
-	case eatnext && len(args) != 0:
-		val = args[0]
-		args = args[1:]
-	case optional:
-		// no value
-	default:
-		err = ErrFlagValueRequired
-		return
-	}
-
-	return key, val, args, nil
-}
-
-func (f *Flag) check() error {
-	if f.Mandatory && !f.IsSet {
-		return ErrFlagMandatory
-	}
-
-	return nil
+	return arg[st:end]
 }

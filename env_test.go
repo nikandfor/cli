@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nikandfor/assert"
+	"github.com/nikandfor/cli/flag"
 )
 
 func TestEnvfile(t *testing.T) {
@@ -24,17 +25,17 @@ func TestEnvfile(t *testing.T) {
 		Args:   Args{},
 		Action: func(c *Command) error { ok = true; return nil },
 		Flags: []*Flag{
-			NewFlag("f1", "", ""),
-			NewFlag("f2", 1, ""),
-			NewFlag("f3", "def", ""),
-			NewFlag("f4", "", ""),
-			NewFlag("f5", "", ""),
-			NewFlag("f6", 0, ""),
+			flag.New("f1", "", ""),
+			flag.New("f2", 1, ""),
+			flag.New("f3", "def", ""),
+			flag.New("f4", "", ""),
+			flag.New("f5", "", ""),
+			flag.New("f6", 0, ""),
 			EnvfileFlag,
 		},
 		EnvPrefix: "PREF_",
 		ParseEnv: func(c *Command, env []string) ([]string, error) {
-			rest, err := ParseEnv(c, env)
+			rest, err := DefaultParseEnv(c, env)
 			assert.NoError(t, err)
 			if err != nil {
 				return nil, err
@@ -56,4 +57,6 @@ func TestEnvfile(t *testing.T) {
 	assert.Equal(t, "abc def", c.Flag("f4").Value)
 	assert.Equal(t, "4", c.Flag("f5").Value)
 	assert.Equal(t, 9, c.Flag("f6").Value)
+
+	assert.Equal(t, []string{"NOT_PREF_F3=3"}, c.Env)
 }

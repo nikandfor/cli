@@ -13,15 +13,15 @@ import (
 
 type (
 	Command struct {
-		// Set by runner
+		// Set by the lib
 
 		Parent *Command
 
 		OSArgs []string
 		OSEnv  []string
 
-		Arg0 string // command name
-		Args Args
+		Arg0 string   // command name
+		Args Args     // must be initialized to cli.Args{} if arguments expected
 		Env  []string // env vars not used for local flags
 
 		// User options
@@ -91,7 +91,7 @@ func (c *Command) MainName() string {
 
 func (c *Command) Command(n string) *Command {
 	for _, sub := range c.Commands {
-		if sub.match(n) {
+		if match(sub.Name, n) {
 			sub.Parent = c
 
 			return sub
@@ -102,20 +102,21 @@ func (c *Command) Command(n string) *Command {
 }
 
 func (c *Command) Flag(n string) *Flag {
-	if c == nil {
-		return nil
-	}
-
-	for _, f := range c.Flags {
-		ns := strings.Split(f.Name, ",")
-		for _, fn := range ns {
-			if fn == n {
-				return f
+	for q := c; q != nil; q = q.Parent {
+		for _, f := range q.Flags {
+			if !match(f.Name, n) {
+				continue
 			}
+
+			if f.Local && q != c {
+				return nil
+			}
+
+			return f
 		}
 	}
 
-	return c.Parent.Flag(n)
+	return nil
 }
 
 func (c *Command) run(args, env []string) (err error) {
@@ -198,7 +199,7 @@ func (c *Command) run(args, env []string) (err error) {
 	}
 
 	if c.Action == nil {
-		_, err = defaultHelp(c, nil, "", nil)
+		_, err = defaultHelp(nil, "", nil)
 		return errors.WrapNoCaller(err, "help")
 	}
 
@@ -226,11 +227,11 @@ func (c *Command) setup() error {
 }
 
 func (c *Command) parseFlag(arg string, more []string) (rest []string, err error) {
-	if c.ParseFlag == nil {
-		return DefaultParseFlag(c, arg, more)
+	if c.ParseFlag != nil {
+		return c.ParseFlag(c, arg, more)
 	}
 
-	return c.ParseFlag(c, arg, more)
+	return DefaultParseFlag(c, arg, more)
 }
 
 func (c *Command) parseEnv(env []string) (rest []string, err error) {
@@ -240,7 +241,7 @@ func (c *Command) parseEnv(env []string) (rest []string, err error) {
 		}
 	}
 
-	return ParseEnv(c, env)
+	return DefaultParseEnv(c, env)
 }
 
 func (c *Command) completeIndex() (int, bool) {
@@ -262,7 +263,7 @@ func (c *Command) complete() error {
 		return c.Complete(c)
 	}
 
-	return Complete(c)
+	return DefaultComplete(c)
 }
 
 func GetEnvPrefix(c *Command) string {
@@ -283,31 +284,45 @@ func (c *Command) runBefore() (err error) {
 			return errors.WrapNoCaller(err, "%v", MainName(c.Parent.Name))
 		}
 	}
+
 	if c.Before != nil {
 		if err = c.Before(c); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
 func (c *Command) runAfter() (err error) {
+	if c.Parent != nil {
+		defer func() {
+			e := c.Parent.runAfter()
+			if err == nil {
+				err = errors.WrapNoCaller(e, "%v", MainName(c.Parent.Name))
+			}
+		}()
+	}
+
 	if c.After != nil {
 		if err = c.After(c); err != nil {
 			return err
 		}
 	}
-	if c.Parent != nil {
-		if err = c.Parent.runAfter(); err != nil {
-			return errors.WrapNoCaller(err, "%v", MainName(c.Parent.Name))
-		}
-	}
+
 	return nil
 }
 
 func (c *Command) check() (err error) {
+	if c.Parent != nil {
+		err = c.Parent.check()
+		if err != nil {
+			return err
+		}
+	}
+
 	for _, f := range c.Flags {
-		if err = f.check(); err != nil {
+		if err = f.Check(); err != nil {
 			return errors.WrapNoCaller(err, f.MainName())
 		}
 	}
@@ -315,10 +330,10 @@ func (c *Command) check() (err error) {
 	return nil
 }
 
-func (c *Command) match(n string) bool {
-	ns := strings.Split(c.Name, ",")
+func match(name, sub string) bool {
+	ns := strings.Split(name, ",")
 	for _, sn := range ns {
-		if sn == n {
+		if sn == sub {
 			return true
 		}
 	}
@@ -358,7 +373,7 @@ func (a Args) Pop() (string, Args) {
 	return a[0], a[1:]
 }
 
-func (a Args) SafeGet(i int) string {
+func (a Args) Get(i int) string {
 	if i < 0 || i >= len(a) {
 		return ""
 	}

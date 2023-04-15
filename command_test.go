@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/nikandfor/assert"
+	"github.com/nikandfor/cli/flag"
 )
 
 func TestCommandRunSimple(t *testing.T) {
@@ -21,8 +22,8 @@ Possible multiline.
     With paddings.`,
 		Commands: []*Command{},
 		Flags: []*Flag{
-			NewFlag("flag,f,ff", false, "some flag"),
-			NewFlag("flag2", "str", "some flag"),
+			flag.New("flag,f,ff", false, "some flag"),
+			flag.New("flag2", "str", "some flag"),
 		},
 
 		Stderr: &buf,
@@ -42,7 +43,7 @@ Possible multiline.
 	//
 
 	err = c.run([]string{"base", "first", "second", "--flag2"}, nil)
-	assert.ErrorIs(t, err, ErrFlagValueRequired)
+	assert.ErrorIs(t, err, flag.ErrValueRequired)
 }
 
 func TestCommandRunSub(t *testing.T) {
@@ -65,11 +66,11 @@ Possible multiline.
 			Args:        Args{},
 			Action:      func(*Command) error { ok = true; return nil },
 			Flags: []*Flag{
-				NewFlag("subflag", 3, "some sub flag"),
+				flag.New("subflag", 3, "some sub flag"),
 			},
 		}},
 		Flags: []*Flag{
-			NewFlag("flag,f,ff", "empty", "some flag"),
+			flag.New("flag,f,ff", "empty", "some flag"),
 			HelpFlag,
 		},
 		Stderr: &buf,
@@ -115,11 +116,11 @@ Possible multiline.
 				return nil
 			},
 			Flags: []*Flag{
-				NewFlag("subflag", 3, "some sub flag"),
+				flag.New("subflag", 3, "some sub flag"),
 			},
 		}},
 		Flags: []*Flag{
-			NewFlag("flag,f,ff", "empty", "some flag"),
+			flag.New("flag,f,ff", "empty", "some flag"),
 			HelpFlag,
 		},
 		Stderr: &buf,
@@ -155,7 +156,7 @@ Possible multiline.
     With paddings.`,
 		//	Commands: []*Command{},
 		Flags: []*Flag{
-			NewFlag("flag,f,ff", 0, "some flag"),
+			flag.New("flag,f,ff", 0, "some flag"),
 		},
 
 		Stderr: &buf,

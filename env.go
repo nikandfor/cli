@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"strings"
 
+	"github.com/nikandfor/cli/flag"
 	"github.com/nikandfor/errors"
 )
 
@@ -38,13 +39,15 @@ func (c *Command) LookupEnv(key string) (string, bool) {
 	return "", false
 }
 
-func envfile(c *Command, f *Flag, arg string, args []string) (_ []string, err error) {
-	args, err = ParseFlagString(c, f, arg, args)
+func envfile(f *Flag, arg string, args []string) (_ []string, err error) {
+	c := f.CurrentCommand.(*Command)
+
+	_, val, args, err := flag.ParseArg(arg, args, true, false)
 	if err != nil {
 		return nil, err
 	}
 
-	data, err := readFile(f.Value.(string))
+	data, err := readFile(val)
 	if err != nil {
 		return nil, errors.Wrap(err, "read file")
 	}
@@ -82,7 +85,7 @@ func envfile(c *Command, f *Flag, arg string, args []string) (_ []string, err er
 	return args, nil
 }
 
-func ParseEnv(c *Command, env []string) (rest []string, err error) {
+func DefaultParseEnv(c *Command, env []string) (rest []string, err error) {
 	prefix := GetEnvPrefix(c)
 	if prefix == "" {
 		return env, nil

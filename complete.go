@@ -53,13 +53,13 @@ func beforeComplete(c *Command) (err error) {
 	return nil
 }
 
-func Complete(c *Command) (err error) {
+func DefaultComplete(c *Command) (err error) {
 	var repl []string
 
 	current := complete.Current(c)
 
 	if false && current == "" {
-		_, err = defaultHelp(c, nil, "", nil)
+		_, err = defaultHelp(nil, "", nil)
 		return
 	}
 

@@ -5,6 +5,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/nikandfor/cli/flag"
 	"github.com/nikandfor/errors"
 )
 
@@ -34,13 +35,13 @@ func isArg(r rune) bool        { return !unicode.IsSpace(r) }
 
 //	isArg := func(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) || unicode.IsPunct(r) }
 
-func flagfile(c *Command, f *Flag, arg string, args []string) (_ []string, err error) {
-	args, err = ParseFlagString(c, f, arg, args)
+func flagfile(f *Flag, arg string, args []string) (_ []string, err error) {
+	_, val, args, err := flag.ParseArg(arg, args, true, false)
 	if err != nil {
 		return nil, err
 	}
 
-	d, err := readFile(f.Value.(string))
+	d, err := readFile(val)
 	if err != nil {
 		return nil, errors.Wrap(err, "read file")
 	}

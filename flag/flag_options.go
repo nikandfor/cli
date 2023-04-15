@@ -1,4 +1,4 @@
-package cli
+package flag
 
 func Hidden(f *Flag) {
 	f.Hidden = true

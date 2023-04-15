@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/nikandfor/cli"
+	"github.com/nikandfor/cli/flag"
 	"github.com/nikandfor/errors"
 )
 
@@ -42,7 +43,7 @@ Greetings are golang 'text/template's with Command argument. Example greetings:
 			cli.NewFlag("file", "greetings.txt", "file with greetings to use"),
 			cli.NewFlag("name", "", "name to greet"),
 
-			cli.NewFlag("greeting,g", -1, "greeting to use to greet", cli.Local),
+			cli.NewFlag("greeting,g", -1, "greeting to use to greet", flag.Local),
 
 			cli.EnvfileFlag,
 			cli.FlagfileFlag,
@@ -61,7 +62,7 @@ Greetings are golang 'text/template's with Command argument. Example greetings:
 				cli.NewFlag("unique,uniq", false, "do not add if already exists"),
 			},
 		}, {
-			Name:        "del,remove",
+			Name:        "delete,del,remove,rm",
 			Description: "delete saved greeting",
 			Action:      del,
 		}, {

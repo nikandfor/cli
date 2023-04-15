@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nikandfor/assert"
+	"github.com/nikandfor/cli/flag"
 )
 
 func TestFlagfile(t *testing.T) {
@@ -14,8 +15,8 @@ func TestFlagfile(t *testing.T) {
 		third --fourth`), nil
 	}
 
-	f := NewFlag("ff", "", "")
-	args, err := flagfile(nil, f, "--ff", []string{"file.flagfile", "a", "b"})
+	f := flag.New("ff", "", "")
+	args, err := flagfile(f, "--ff", []string{"file.flagfile", "a", "b"})
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"first", "second", "third", "--fourth", "a", "b"}, args)
 }
@@ -29,8 +30,8 @@ func TestFlagfile2(t *testing.T) {
 		-c 12`), nil
 	}
 
-	f := NewFlag("ff", "", "")
-	args, err := flagfile(nil, f, "--ff", []string{"file.flagfile", "a", "b"})
+	f := flag.New("ff", "", "")
+	args, err := flagfile(f, "--ff", []string{"file.flagfile", "a", "b"})
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"-a", "9", "-b", "10", "-c", "12", "a", "b"}, args)
 }
@@ -50,11 +51,11 @@ func TestRunFlagfile(t *testing.T) {
 			Name:   "second",
 			Action: func(c *Command) error { ok = true; return nil },
 			Flags: []*Flag{
-				NewFlag("flag", "second", ""),
+				flag.New("flag", "second", ""),
 			},
 		}},
 		Flags: []*Flag{
-			NewFlag("flag", "first", ""),
+			flag.New("flag", "first", ""),
 			FlagfileFlag,
 		},
 	}
@@ -79,11 +80,11 @@ func TestRunFlagfile2(t *testing.T) {
 			Name:   "second",
 			Action: func(c *Command) error { ok = true; return nil },
 			Flags: []*Flag{
-				NewFlag("flag", "second", ""),
+				flag.New("flag", "second", ""),
 			},
 		}},
 		Flags: []*Flag{
-			NewFlag("flag", "first", ""),
+			flag.New("flag", "first", ""),
 			FlagfileFlag,
 		},
 	}

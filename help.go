@@ -4,22 +4,21 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/nikandfor/cli/flag"
 	"github.com/nikandfor/errors"
 )
 
-var HelpFlag *Flag
-
-func init() {
-	HelpFlag = &Flag{
-		Name:        "help,h",
-		Usage:       "=[hidden]",
-		Description: "print command help end exit",
-		Action:      defaultHelp,
-	}
+var HelpFlag = &Flag{
+	Name:        "help,h",
+	Usage:       "=[hidden]",
+	Description: "print command help end exit",
+	Action:      defaultHelp,
 }
 
-func defaultHelp(c *Command, f *Flag, arg string, args []string) (rest []string, err error) {
-	_, v, rest, err := ParseFlagArg(arg, args, false, true)
+func defaultHelp(f *Flag, arg string, args []string) (rest []string, err error) {
+	c := f.CurrentCommand.(*Command)
+
+	_, v, rest, err := flag.ParseArg(arg, args, false, true)
 	if err != nil {
 		return
 	}
