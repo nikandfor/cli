@@ -17,7 +17,7 @@ var FlagfileFlag = &Flag{
 	Action:      flagfile,
 }
 
-var readFile func(string) ([]byte, error) = os.ReadFile
+var readFile = os.ReadFile
 
 func skip(d []byte, i int, f func(r rune) bool) int {
 	for w := 0; i < len(d); i += w {

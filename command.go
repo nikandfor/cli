@@ -94,6 +94,23 @@ func RunAndExit(c *Command, args, env []string) {
 	os.Exit(1)
 }
 
+func Chain(a ...Action) Action {
+	return func(c *Command) (err error) {
+		for _, a := range a {
+			if a == nil {
+				continue
+			}
+
+			err = a(c)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
 func (c *Command) MainName() string {
 	return MainName(c.Name)
 }
