@@ -8,12 +8,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/nikandfor/cli/flag"
 	"github.com/nikandfor/errors"
 )
 
 type (
 	Command struct {
-		// Set by the lib
+		// Set by the lib. Except Args, it's appended.
 
 		Parent *Command
 
@@ -26,30 +27,38 @@ type (
 
 		// User options
 
-		Name        string
+		Name        string // comma separated list of aliases
 		Group       string
-		Usage       string
-		Description string
-		Help        string
+		Usage       string // [flags] {args...}
+		Description string // short textual description of the command
+		Help        string // full description
 
 		Before Action
 		After  Action
 		Action Action
 
-		Complete Action
+		//	Complete Action
 
 		Flags    []*Flag
 		Commands []*Command
 
+		// Hide from help.
 		Hidden bool
 
+		// EnvPrefix used to capture flag values from env vars.
+		// No capturing is done if empty.
+		// Args have precedence over env vars.
+		// Env vars have precedence over default values.
+		// Inherited by subcommands.
 		EnvPrefix string
 
+		// ParseEnv and ParseFlag override default behaviour.
+		// Both are inherited by subcommands.
 		ParseEnv  func(c *Command, env []string) ([]string, error)
 		ParseFlag func(c *Command, arg string, args []string) ([]string, error)
 
-		Stdout io.Writer
-		Stderr io.Writer
+		Stdout io.Writer // set to os.Stdout if nil
+		Stderr io.Writer // the same as Stdout
 	}
 
 	Action func(c *Command) error
@@ -199,7 +208,7 @@ func (c *Command) run(args, env []string) (err error) {
 	}
 
 	if c.Action == nil {
-		_, err = defaultHelp(nil, "", nil)
+		_, err = defaultHelp(&Flag{CurrentCommand: c}, "", nil)
 		return errors.WrapNoCaller(err, "help")
 	}
 
@@ -227,17 +236,19 @@ func (c *Command) setup() error {
 }
 
 func (c *Command) parseFlag(arg string, more []string) (rest []string, err error) {
-	if c.ParseFlag != nil {
-		return c.ParseFlag(c, arg, more)
+	for q := c; q != nil; q = q.Parent {
+		if q.ParseFlag != nil {
+			return q.ParseFlag(c, arg, more)
+		}
 	}
 
 	return DefaultParseFlag(c, arg, more)
 }
 
 func (c *Command) parseEnv(env []string) (rest []string, err error) {
-	for c := c; c != nil; c = c.Parent {
-		if c.ParseEnv != nil {
-			return c.ParseEnv(c, env)
+	for q := c; q != nil; q = q.Parent {
+		if q.ParseEnv != nil {
+			return q.ParseEnv(c, env)
 		}
 	}
 
@@ -259,9 +270,9 @@ func (c *Command) completeIndex() (int, bool) {
 }
 
 func (c *Command) complete() error {
-	if c.Complete != nil {
-		return c.Complete(c)
-	}
+	//	if c.Complete != nil {
+	//		return c.Complete(c)
+	//	}
 
 	return DefaultComplete(c)
 }
@@ -322,7 +333,7 @@ func (c *Command) check() (err error) {
 	}
 
 	for _, f := range c.Flags {
-		if err = f.Check(); err != nil {
+		if err = flag.CheckFlag(f); err != nil {
 			return errors.WrapNoCaller(err, f.MainName())
 		}
 	}

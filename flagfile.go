@@ -9,6 +9,8 @@ import (
 	"github.com/nikandfor/errors"
 )
 
+// FlagfileFlag replaces this flag occurrence with the given file content split on spaces.
+// # comments are also supported.
 var FlagfileFlag = &Flag{
 	Name:        "flagfile,ff",
 	Description: "load flags from file",

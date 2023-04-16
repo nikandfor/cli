@@ -16,8 +16,9 @@ type (
 		Description string
 		Help        string
 
-		Action   Action
-		Complete Action
+		Action Action  // flag parser
+		Check  Visitor // called after all parsing but before command action for all flags
+		//	Complete Visitor
 
 		Hidden   bool // not shown in a help by default
 		Required bool // must be set from args or env var
@@ -30,8 +31,9 @@ type (
 		CurrentCommand interface{}
 	}
 
-	Action func(f *Flag, arg string, args []string) ([]string, error)
-	Option = func(f *Flag)
+	Action  func(f *Flag, arg string, args []string) ([]string, error)
+	Visitor func(f *Flag) error
+	Option  = func(f *Flag)
 
 	// Setter is subset of stdlib flag.Value interface
 	Setter interface {
@@ -102,7 +104,11 @@ func (f *Flag) MainName() string {
 	return f.Name[:p]
 }
 
-func (f *Flag) Check() error {
+func CheckFlag(f *Flag) error {
+	if f.Check != nil {
+		return f.Check(f)
+	}
+
 	if f.Required && !f.IsSet {
 		return ErrRequired
 	}

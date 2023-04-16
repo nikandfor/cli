@@ -7,7 +7,8 @@ import (
 )
 
 type (
-	Flag = flag.Flag
+	Flag       = flag.Flag
+	FlagAction = flag.Action
 )
 
 var (
