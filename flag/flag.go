@@ -19,9 +19,9 @@ type (
 		Action   Action
 		Complete Action
 
-		Hidden    bool // not shown in a help by default
-		Mandatory bool // must be set
-		Local     bool // do not inherited by child
+		Hidden   bool // not shown in a help by default
+		Required bool // must be set from args or env var
+		Local    bool // do not inherited by child
 
 		Value interface{}
 
@@ -40,8 +40,8 @@ type (
 )
 
 var (
-	ErrMandatory     = errors.New("flag is mandatory")
-	ErrValueRequired = errors.New("flag value required")
+	ErrRequired      = errors.New("flag is required")
+	ErrValueRequired = errors.New("flag value is required")
 )
 
 func New(name string, val interface{}, help string, opts ...Option) (f *Flag) {
@@ -103,8 +103,8 @@ func (f *Flag) MainName() string {
 }
 
 func (f *Flag) Check() error {
-	if f.Mandatory && !f.IsSet {
-		return ErrMandatory
+	if f.Required && !f.IsSet {
+		return ErrRequired
 	}
 
 	return nil

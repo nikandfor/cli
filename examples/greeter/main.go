@@ -41,7 +41,7 @@ Greetings are golang 'text/template's with Command argument. Example greetings:
 
 		Flags: []*cli.Flag{
 			cli.NewFlag("file", "greetings.txt", "file with greetings to use"),
-			cli.NewFlag("name", "", "name to greet"),
+			cli.NewFlag("name", "", "name to greet", flag.Required),
 
 			cli.NewFlag("greeting,g", -1, "greeting to use to greet", flag.Local),
 

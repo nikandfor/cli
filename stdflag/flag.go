@@ -36,7 +36,7 @@ func Parsed() bool {
 func NArg() int { return CommandLine.Args.Len() }
 
 func Arg(i int) string {
-	return CommandLine.Args.SafeGet(i)
+	return CommandLine.Args.Get(i)
 }
 
 func Args() []string {

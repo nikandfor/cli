@@ -4,8 +4,8 @@ func Hidden(f *Flag) {
 	f.Hidden = true
 }
 
-func Mandatory(f *Flag) {
-	f.Mandatory = true
+func Required(f *Flag) {
+	f.Required = true
 }
 
 func Local(f *Flag) {
