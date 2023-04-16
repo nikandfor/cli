@@ -1,3 +1,10 @@
+[![Documentation](https://pkg.go.dev/badge/github.com/nikandfor/cli)](https://pkg.go.dev/github.com/nikandfor/cli?tab=doc)
+[![Go workflow](https://github.com/nikandfor/cli/actions/workflows/go.yml/badge.svg)](https://github.com/nikandfor/cli/actions/workflows/go.yml)
+[![CircleCI](https://circleci.com/gh/nikandfor/cli.svg?style=svg)](https://circleci.com/gh/nikandfor/cli)
+[![codecov](https://codecov.io/gh/nikandfor/cli/branch/master/graph/badge.svg)](https://codecov.io/gh/nikandfor/cli)
+[![Go Report Card](https://goreportcard.com/badge/github.com/nikandfor/cli)](https://goreportcard.com/report/github.com/nikandfor/cli)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/nikandfor/cli?sort=semver)
+
 # cli
 Lightweight but extensible library to create convinient command line application in Go.
 
