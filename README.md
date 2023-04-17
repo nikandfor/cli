@@ -6,9 +6,9 @@
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/nikandfor/cli?sort=semver)
 
 # cli
-Lightweight but extensible library to create convinient command line application in Go.
+This is a lightweight yet extensible library for creating convenient command-line applications in Go.
+It follows the general principle of being dead simple, efficient, and highly customizable to fit your needs.
 
-The general principle I follow everywhere is used here as well. The library must allow you to customize the behaviour as you need.
 Many cool features are not supported by the library, but they can be easily implemented if needed.
 For example GNU grouping of oneletter options are not supported, but if you want, just set your custom `Command.ParseFlag` handler.
 
