@@ -25,6 +25,8 @@ type (
 		Args Args     // must be initialized to cli.Args{} if arguments expected
 		Env  []string // env vars not used for local flags
 
+		Chosen *Command // chosen command
+
 		// User options
 
 		Name        string // comma separated list of aliases
@@ -186,6 +188,7 @@ func (c *Command) run(args, env []string) (err error) {
 		}
 
 		if sub := c.Command(arg); sub != nil {
+			c.Chosen = sub
 			err = sub.run(args, c.Env)
 
 			return errors.WrapNoCaller(err, MainName(arg))

@@ -82,7 +82,6 @@ func New(name string, val interface{}, help string, opts ...Option) (f *Flag) {
 	case []string:
 		f.Action = ParseStringSlice
 	case Setter:
-		f.Value = nil
 		f.Action = ParseSetter(val, true, false)
 	default:
 		panic(fmt.Sprintf("unsupported value type: %T", val))

@@ -6,6 +6,12 @@ import (
 	"github.com/nikandfor/errors"
 )
 
+func Default(v interface{}) Option {
+	return func(f *Flag) {
+		f.Value = v
+	}
+}
+
 func Hidden(f *Flag) {
 	f.Hidden = true
 }
