@@ -14,8 +14,9 @@ type (
 )
 
 var CommandLine = &cli.Command{
-	Name: os.Args[0],
-	Args: cli.Args{},
+	Name:   os.Args[0],
+	Args:   cli.Args{},
+	Action: func(*cli.Command) error { return nil },
 }
 
 var parsed bool
@@ -58,6 +59,8 @@ func Bool(name string, value bool, usage string) *bool {
 }
 
 func BoolVar(p *bool, name string, value bool, usage string) {
+	*p = value
+
 	f := &cli.Flag{
 		Name:  name,
 		Value: value,
@@ -85,6 +88,8 @@ func Duration(name string, value time.Duration, usage string) *time.Duration {
 }
 
 func DurationVar(p *time.Duration, name string, value time.Duration, usage string) {
+	*p = value
+
 	f := &cli.Flag{
 		Name:  name,
 		Value: value,
@@ -112,6 +117,8 @@ func Float64(name string, value float64, usage string) *float64 {
 }
 
 func Float64Var(p *float64, name string, value float64, usage string) {
+	*p = value
+
 	f := &cli.Flag{
 		Name:  name,
 		Value: value,
@@ -139,6 +146,8 @@ func Int(name string, value int, usage string) *int {
 }
 
 func IntVar(p *int, name string, value int, usage string) {
+	*p = value
+
 	f := &cli.Flag{
 		Name:  name,
 		Value: value,
@@ -166,6 +175,8 @@ func Int64(name string, value int64, usage string) *int64 {
 }
 
 func Int64Var(p *int64, name string, value int64, usage string) {
+	*p = value
+
 	f := &cli.Flag{
 		Name:  name,
 		Value: value,
@@ -193,6 +204,8 @@ func String(name string, value string, usage string) *string {
 }
 
 func StringVar(p *string, name string, value string, usage string) {
+	*p = value
+
 	f := &cli.Flag{
 		Name:  name,
 		Value: value,
@@ -220,6 +233,8 @@ func Uint(name string, value uint, usage string) *uint {
 }
 
 func UintVar(p *uint, name string, value uint, usage string) {
+	*p = value
+
 	f := &cli.Flag{
 		Name:  name,
 		Value: value,
@@ -247,6 +262,8 @@ func Uint64(name string, value uint64, usage string) *uint64 {
 }
 
 func Uint64Var(p *uint64, name string, value uint64, usage string) {
+	*p = value
+
 	f := &cli.Flag{
 		Name:  name,
 		Value: value,
