@@ -24,9 +24,9 @@ type (
 		Required bool // must be set from args or env var
 		Local    bool // do not inherited by child
 
-		Value interface{}
-
 		IsSet bool
+
+		Value interface{}
 
 		CurrentCommand interface{}
 	}

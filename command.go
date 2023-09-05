@@ -96,6 +96,14 @@ func RunAndExit(c *Command, args, env []string) {
 	os.Exit(1)
 }
 
+func ParseFlag(c *Command, arg string, more []string) ([]string, error) {
+	return c.parseFlag(arg, more)
+}
+
+func ParseEnv(c *Command, env []string) ([]string, error) {
+	return c.parseEnv(env)
+}
+
 func Chain(a ...Action) Action {
 	return func(c *Command) (err error) {
 		for _, a := range a {
