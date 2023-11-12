@@ -3,7 +3,7 @@ package flag
 import (
 	"os"
 
-	"github.com/nikandfor/errors"
+	"tlog.app/go/errors"
 )
 
 func Default(v interface{}) Option {

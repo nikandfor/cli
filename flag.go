@@ -3,7 +3,7 @@ package cli
 import (
 	stderrors "errors"
 
-	"github.com/nikandfor/cli/flag"
+	"nikand.dev/go/cli/flag"
 )
 
 type (

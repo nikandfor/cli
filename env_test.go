@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/nikandfor/assert"
-	"github.com/nikandfor/cli/flag"
+	"nikand.dev/go/cli/flag"
 )
 
 func TestEnvfile(t *testing.T) {

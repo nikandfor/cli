@@ -5,8 +5,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/nikandfor/cli/flag"
-	"github.com/nikandfor/errors"
+	"nikand.dev/go/cli/flag"
+	"tlog.app/go/errors"
 )
 
 // FlagfileFlag replaces this flag occurrence with the given file content split on spaces.

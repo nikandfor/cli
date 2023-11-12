@@ -7,9 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nikandfor/cli/complete"
-	"github.com/nikandfor/errors"
-	"github.com/nikandfor/tlog"
+	"nikand.dev/go/cli/complete"
+	"tlog.app/go/errors"
 )
 
 var ErrCouldNotDetermineShell = errors.New("couldn't determine the shell")
@@ -112,7 +111,7 @@ func DefaultComplete(c *Command) (err error) {
 		}
 	}
 
-	tlog.Printw("complete", "dashes", dashes, "cur", cur, "opts", repl)
+	//	tlog.Printw("complete", "dashes", dashes, "cur", cur, "opts", repl)
 
 	for i := range repl {
 		repl[i] = strconv.Quote(repl[i])

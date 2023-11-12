@@ -5,8 +5,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/nikandfor/cli"
-	"github.com/nikandfor/cli/flag"
+	"nikand.dev/go/cli"
+	"nikand.dev/go/cli/flag"
 )
 
 type (
@@ -323,11 +323,7 @@ func Visit(fn func(f *cli.Flag)) {
 }
 
 func VisitAll(fn func(f *cli.Flag)) {
-	l := make([]*cli.Flag, 0, len(CommandLine.Flags))
-
-	for _, f := range CommandLine.Flags {
-		l = append(l, f)
-	}
+	l := append([]*flag.Flag{}, CommandLine.Flags...)
 
 	sort.Slice(l, func(i, j int) bool {
 		return l[i].MainName() < l[j].MainName()

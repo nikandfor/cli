@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/nikandfor/errors"
+	"tlog.app/go/errors"
 )
 
 //go:embed complete.bash complete.zsh

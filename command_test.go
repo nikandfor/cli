@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/nikandfor/assert"
-	"github.com/nikandfor/cli/flag"
+	"nikand.dev/go/cli/flag"
 )
 
 func TestCommandRunSimple(t *testing.T) {

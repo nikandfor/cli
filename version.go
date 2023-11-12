@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/nikandfor/cli/flag"
+	"nikand.dev/go/cli/flag"
 )
 
 func Version(ver, commit, date string) *Command {

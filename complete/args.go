@@ -17,18 +17,18 @@ type (
 )
 
 func Shell(env LookupEnver) (sh string, ok bool) {
-	sh, ok = env.LookupEnv("BASH")
+	_, ok = env.LookupEnv("BASH")
 	if ok {
 		//	return filepath.Base(sh), true
 		return "bash", true
 	}
 
-	sh, ok = env.LookupEnv("ZSH_NAME")
+	_, ok = env.LookupEnv("ZSH_NAME")
 	if ok {
 		return "zsh", true
 	}
 
-	sh, ok = env.LookupEnv("SHELL")
+	_, ok = env.LookupEnv("SHELL")
 	if ok {
 		return filepath.Base(sh), true
 	}

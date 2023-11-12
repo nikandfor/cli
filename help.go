@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/nikandfor/cli/flag"
-	"github.com/nikandfor/errors"
+	"nikand.dev/go/cli/flag"
+	"tlog.app/go/errors"
 )
 
 var HelpFlag = &Flag{

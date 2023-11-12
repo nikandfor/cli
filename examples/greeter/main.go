@@ -10,9 +10,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/nikandfor/cli"
-	"github.com/nikandfor/cli/flag"
-	"github.com/nikandfor/errors"
+	"nikand.dev/go/cli"
+	"nikand.dev/go/cli/flag"
+	"tlog.app/go/errors"
 )
 
 var (
