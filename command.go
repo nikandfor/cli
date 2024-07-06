@@ -127,11 +127,13 @@ func (c *Command) MainName() string {
 
 func (c *Command) Command(n string) *Command {
 	for _, sub := range c.Commands {
-		if match(sub.Name, n) {
-			sub.Parent = c
-
-			return sub
+		if sub == nil || !match(sub.Name, n) {
+			continue
 		}
+
+		sub.Parent = c
+
+		return sub
 	}
 
 	return nil
@@ -140,7 +142,7 @@ func (c *Command) Command(n string) *Command {
 func (c *Command) Flag(n string) *Flag {
 	for q := c; q != nil; q = q.Parent {
 		for _, f := range q.Flags {
-			if !match(f.Name, n) {
+			if f == nil || !match(f.Name, n) {
 				continue
 			}
 
@@ -361,6 +363,10 @@ func (c *Command) check() (err error) {
 	}
 
 	for _, f := range c.Flags {
+		if f == nil {
+			continue
+		}
+
 		if err = flag.CheckFlag(f); err != nil {
 			return errors.WrapNoCaller(err, f.MainName())
 		}
@@ -371,11 +377,13 @@ func (c *Command) check() (err error) {
 
 func match(name, sub string) bool {
 	ns := strings.Split(name, ",")
+
 	for _, sn := range ns {
 		if sn == sub {
 			return true
 		}
 	}
+
 	return false
 }
 

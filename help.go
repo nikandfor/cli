@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"nikand.dev/go/cli/flag"
 	"tlog.app/go/errors"
@@ -16,6 +17,8 @@ var HelpFlag = &Flag{
 }
 
 func defaultHelp(f *Flag, arg string, args []string) (rest []string, err error) {
+	const minNameW, maxNameW = 20, 40
+
 	c := f.CurrentCommand.(*Command)
 
 	_, v, rest, err := flag.ParseArg(arg, args, false, true)
@@ -26,6 +29,38 @@ func defaultHelp(f *Flag, arg string, args []string) (rest []string, err error) 
 	hidden := v == "hidden"
 
 	b := new(bytes.Buffer)
+
+	pline := func(name, usage, desc string, w int, val interface{}) {
+		name += usage
+
+		fmt.Fprintf(b, "    %-*s", w, name)
+
+		if len(name) > w {
+			fmt.Fprintf(b, "\n    %-*s", w, "")
+		}
+
+		lines := strings.Split(desc, "\n")
+
+		for i, l := range lines {
+			if i == 0 {
+				fmt.Fprintf(b, " - ")
+			} else {
+				fmt.Fprintf(b, "\n    %-*s   ", w, "")
+			}
+
+			fmt.Fprintf(b, "%s", l)
+		}
+
+		if val != nil && val != "" {
+			if len(lines) != 0 && lines[len(lines)-1] == "" {
+				fmt.Fprintf(b, "default %v", val)
+			} else {
+				fmt.Fprintf(b, " (default %v)", val)
+			}
+		}
+
+		fmt.Fprintf(b, "\n")
+	}
 
 	//	full := FullName(c.Parent)
 	//	if full != nil {
@@ -54,9 +89,15 @@ func defaultHelp(f *Flag, arg string, args []string) (rest []string, err error) 
 
 	if len(c.Commands) != 0 {
 		cnt := 0
+		namew := minNameW
+
 		for _, sub := range c.Commands {
-			if sub.Hidden && !hidden {
+			if sub == nil {
+				// spacing
+			} else if sub.Hidden && !hidden {
 				continue
+			} else if w := len(sub.Name) + len(sub.Usage); w > namew {
+				namew = w
 			}
 
 			cnt++
@@ -66,26 +107,46 @@ func defaultHelp(f *Flag, arg string, args []string) (rest []string, err error) 
 			fmt.Fprintf(b, "\nSubcommands\n")
 		}
 
+		headernl := false
+
+		if namew > maxNameW {
+			namew = maxNameW
+		}
+
 		for _, sub := range c.Commands {
-			if sub.Hidden && !hidden {
+			switch {
+			case sub == nil:
+				fmt.Fprintf(b, "\n")
+				continue
+			case sub.Name == "":
+				if headernl {
+					fmt.Fprintf(b, "\n")
+					headernl = false
+				}
+
+				fmt.Fprintf(b, "    %*s # %s\n", namew, "", sub.Description)
+				continue
+			case sub.Hidden && !hidden:
 				continue
 			}
 
-			fmt.Fprintf(b, "    %-20s", sub.Name)
+			headernl = true
 
-			if sub.Description != "" {
-				fmt.Fprintf(b, " - %s", sub.Description)
-			}
-
-			fmt.Fprintf(b, "\n")
+			pline(sub.Name, "", sub.Description, namew, nil)
 		}
 	}
 
 	for cc := c; cc != nil; cc = cc.Parent {
 		cnt := 0
+		namew := minNameW
+
 		for _, f := range cc.Flags {
-			if f.Hidden && !hidden || cc != c && f.Local {
+			if f == nil {
+				// spacing
+			} else if f.Hidden && !hidden || cc != c && f.Local {
 				continue
+			} else if w := len(f.Name) + len(f.Usage); w > namew {
+				namew = w
 			}
 
 			cnt++
@@ -101,28 +162,32 @@ func defaultHelp(f *Flag, arg string, args []string) (rest []string, err error) 
 			fmt.Fprintf(b, "\nFlags of parent command %v\n", cc.MainName())
 		}
 
+		headernl := false
+
+		if namew > maxNameW {
+			namew = maxNameW
+		}
+
 		for _, f := range cc.Flags {
-			if f.Hidden && !hidden || cc != c && f.Local {
+			switch {
+			case f == nil:
+				fmt.Fprintf(b, "\n")
+				continue
+			case f.Name == "":
+				if headernl {
+					fmt.Fprintf(b, "\n")
+					headernl = false
+				}
+
+				fmt.Fprintf(b, "    %*s # %s\n", namew, "", f.Description)
+				continue
+			case f.Hidden && !hidden || cc != c && f.Local:
 				continue
 			}
 
-			name := f.Name
+			headernl = true
 
-			if f.Usage != "" {
-				name += f.Usage
-			}
-
-			fmt.Fprintf(b, "    %-20s", name)
-
-			if f.Description != "" {
-				fmt.Fprintf(b, " - %s", f.Description)
-			}
-
-			if f.Value != nil && f.Value != "" {
-				fmt.Fprintf(b, " (default %v)", f.Value)
-			}
-
-			fmt.Fprintf(b, "\n")
+			pline(f.Name, f.Usage, f.Description, namew, f.Value)
 		}
 	}
 
