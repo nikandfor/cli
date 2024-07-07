@@ -180,9 +180,15 @@ func ParseFloat32(f *Flag, arg string, args []string) ([]string, error) {
 
 func ParseInt(f *Flag, arg string, args []string) ([]string, error) {
 	act := ParseFunc(func(val string) (_ interface{}, err error) {
-		v, err := strconv.ParseInt(val, 10, 64)
+		val, base, neg := numbase(val)
+
+		v, err := strconv.ParseInt(val, base, 64)
 		if err != nil {
 			return nil, err
+		}
+
+		if neg {
+			v = -v
 		}
 
 		return int(v), nil
@@ -193,9 +199,15 @@ func ParseInt(f *Flag, arg string, args []string) ([]string, error) {
 
 func ParseInt64(f *Flag, arg string, args []string) ([]string, error) {
 	act := ParseFunc(func(val string) (_ interface{}, err error) {
-		v, err := strconv.ParseInt(val, 10, 64)
+		val, base, neg := numbase(val)
+
+		v, err := strconv.ParseInt(val, base, 64)
 		if err != nil {
 			return nil, err
+		}
+
+		if neg {
+			v = -v
 		}
 
 		return v, nil
@@ -239,9 +251,15 @@ func ParseStringSlice(f *Flag, arg string, args []string) ([]string, error) {
 
 func ParseUint(f *Flag, arg string, args []string) ([]string, error) {
 	act := ParseFunc(func(val string) (_ interface{}, err error) {
-		v, err := strconv.ParseUint(val, 10, 64)
+		val, base, neg := numbase(val)
+
+		v, err := strconv.ParseUint(val, base, 64)
 		if err != nil {
 			return nil, err
+		}
+
+		if neg {
+			v = uint64(0) - v
 		}
 
 		return uint(v), nil
@@ -252,9 +270,15 @@ func ParseUint(f *Flag, arg string, args []string) ([]string, error) {
 
 func ParseUint64(f *Flag, arg string, args []string) ([]string, error) {
 	act := ParseFunc(func(val string) (_ interface{}, err error) {
-		v, err := strconv.ParseUint(val, 10, 64)
+		val, base, neg := numbase(val)
+
+		v, err := strconv.ParseUint(val, base, 64)
 		if err != nil {
 			return nil, err
+		}
+
+		if neg {
+			v = uint64(0) - v
 		}
 
 		return v, nil
@@ -325,4 +349,32 @@ func ParseArg(arg string, args []string, eatnext, optional bool) (key, val strin
 	}
 
 	return key, val, args, nil
+}
+
+//
+
+func numbase(v string) (_ string, base int, neg bool) {
+	i := 0
+	base = 10
+
+	if len(v[i:]) > 1 && v[i] == '-' {
+		i++
+		neg = true
+	}
+
+	if len(v[i:]) > 2 {
+		switch v[i : i+2] {
+		case "0x":
+			i += 2
+			base = 16
+		case "0o":
+			i += 2
+			base = 8
+		case "0b":
+			i += 2
+			base = 2
+		}
+	}
+
+	return v[i:], base, neg
 }
