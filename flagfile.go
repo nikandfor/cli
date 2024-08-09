@@ -52,6 +52,9 @@ func flagfile(f *Flag, arg string, args []string) (_ []string, err error) {
 
 	for i := 0; i < len(d); i++ {
 		i = skip(d, i, unicode.IsSpace)
+		if i == len(d) {
+			break
+		}
 
 		if d[i] == '#' {
 			i = skip(d, i, untilNewline)
