@@ -1,9 +1,8 @@
 package flag
 
 import (
+	"fmt"
 	"os"
-
-	"tlog.app/go/errors"
 )
 
 func Default(v interface{}) Option {
@@ -37,7 +36,7 @@ func AtFile(f *Flag) {
 		if len(val) != 0 && val[0] == '@' {
 			data, err := readFile(val[1:])
 			if err != nil {
-				return nil, errors.Wrap(err, "read file")
+				return nil, fmt.Errorf("read file: %w", err)
 			}
 
 			arg = key + "=" + string(data)

@@ -83,7 +83,7 @@ func TestRunFlagfile(t *testing.T) {
 
 	var ok bool
 
-	c := Command{
+	c := &Command{
 		Name: "first",
 		Commands: []*Command{{
 			Name:   "second",
@@ -98,7 +98,7 @@ func TestRunFlagfile(t *testing.T) {
 		},
 	}
 
-	err := c.run([]string{"first", "second", "--flag", "before", "--flagfile=qwe"}, nil)
+	err := Run(c, []string{"first", "second", "--flag", "before", "--flagfile=qwe"}, nil)
 	assert.NoError(t, err)
 	assert.True(t, ok)
 	assert.Equal(t, "first", c.Flag("flag").Value)
@@ -112,7 +112,7 @@ func TestRunFlagfile2(t *testing.T) {
 
 	var ok bool
 
-	c := Command{
+	c := &Command{
 		Name: "first",
 		Commands: []*Command{{
 			Name:   "second",
@@ -127,7 +127,7 @@ func TestRunFlagfile2(t *testing.T) {
 		},
 	}
 
-	err := c.run([]string{"first", "second", "--flag", "before", "--flagfile=qwe", "--flag=after"}, nil)
+	err := Run(c, []string{"first", "second", "--flag", "before", "--flagfile=qwe", "--flag=after"}, nil)
 	assert.NoError(t, err)
 	assert.True(t, ok)
 	assert.Equal(t, "first", c.Flag("flag").Value)

@@ -3,10 +3,10 @@ package cli
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"strings"
 
 	"nikand.dev/go/cli/flag"
-	"tlog.app/go/errors"
 )
 
 var EnvfileFlag = &Flag{
@@ -49,7 +49,7 @@ func envfile(f *Flag, arg string, args []string) (_ []string, err error) {
 
 	data, err := readFile(val)
 	if err != nil {
-		return nil, errors.Wrap(err, "read file")
+		return nil, wrap(err, "read file")
 	}
 
 	r := bufio.NewScanner(bytes.NewReader(data))
@@ -72,12 +72,12 @@ func envfile(f *Flag, arg string, args []string) (_ []string, err error) {
 	}
 
 	if err = r.Err(); err != nil {
-		return nil, errors.Wrap(err, "scan file")
+		return nil, wrap(err, "scan file")
 	}
 
 	env, err = c.parseEnv(env)
 	if err != nil {
-		return nil, errors.Wrap(err, "parse env")
+		return nil, wrap(err, "parse env")
 	}
 
 	c.Env = append(c.Env, env...)

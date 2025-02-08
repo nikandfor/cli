@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"nikand.dev/go/cli/flag"
-	"tlog.app/go/errors"
 )
 
 var HelpFlag = &Flag{
@@ -193,7 +192,7 @@ func defaultHelp(f *Flag, arg string, args []string) (rest []string, err error) 
 
 	_, err = b.WriteTo(c.Stdout)
 	if err != nil {
-		return nil, errors.Wrap(err, "write")
+		return nil, wrap(err, "write")
 	}
 
 	return nil, ErrExit

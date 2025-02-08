@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-
-	"tlog.app/go/errors"
 )
 
 //go:embed complete.bash complete.zsh
@@ -19,7 +17,7 @@ func Template(shell string) ([]byte, error) {
 func ExecTemplate(w io.Writer, shell string, args []string) (err error) {
 	f, err := Template(shell)
 	if err != nil {
-		return errors.Wrap(err, "read script")
+		return fmt.Errorf("read script: %w", err)
 	}
 
 	_, err = fmt.Fprintf(w, string(f), args[0], strings.Join(args, " "))

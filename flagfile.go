@@ -7,7 +7,6 @@ import (
 	"unicode/utf8"
 
 	"nikand.dev/go/cli/flag"
-	"tlog.app/go/errors"
 )
 
 // FlagfileFlag replaces this flag occurrence with the given file content split on spaces.
@@ -28,7 +27,7 @@ func flagfile(f *Flag, arg string, args []string) (_ []string, err error) {
 
 	d, err := readFile(val)
 	if err != nil {
-		return nil, errors.Wrap(err, "read file")
+		return nil, wrap(err, "read file")
 	}
 
 	var add []string

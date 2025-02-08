@@ -61,10 +61,9 @@ func main() {
 
             // stdlib flag.Value is also supported
 
-            // must be added explicitly
-            cli.HelpFlag,
-            cli.EnvFlag,
             cli.FlagfileFlag, // configs without configs
+            cli.EnvFlag,
+            cli.HelpFlag, // must be added explicitly
         },
     }
 

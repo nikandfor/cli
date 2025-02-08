@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,7 +9,6 @@ import (
 	"strings"
 
 	"nikand.dev/go/cli/complete"
-	"tlog.app/go/errors"
 )
 
 var ErrCouldNotDetermineShell = errors.New("couldn't determine the shell")
@@ -32,12 +32,12 @@ func beforeComplete(c *Command) (err error) {
 	fn := "complete_log_app"
 	fn, err = filepath.Abs(fn)
 	if err != nil {
-		return errors.Wrap(err, "abs path")
+		return wrap(err, "abs path")
 	}
 
 	f, err := os.Create(fn)
 	if err != nil {
-		return errors.Wrap(err, "create log file")
+		return wrap(err, "create log file")
 	}
 
 	defer f.Close()

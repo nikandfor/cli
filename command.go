@@ -1,7 +1,7 @@
 package cli
 
 import (
-	stderrors "errors"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"nikand.dev/go/cli/flag"
-	"tlog.app/go/errors"
 )
 
 type (
@@ -69,13 +68,9 @@ type (
 )
 
 var (
-	ErrNoSuchCommand  = stderrors.New("no such command")
-	ErrNoArgsExpected = stderrors.New("no args expected")
+	ErrNoSuchCommand  = errors.New("no such command")
+	ErrNoArgsExpected = errors.New("no args expected")
 )
-
-func Run(c *Command, args, env []string) (err error) {
-	return c.run(args, env)
-}
 
 func RunAndExit(c *Command, args, env []string) {
 	if false {
@@ -86,7 +81,7 @@ func RunAndExit(c *Command, args, env []string) {
 		}
 	}
 
-	err := c.run(args, env)
+	err := Run(c, args, env)
 	if err == nil {
 		return
 	}
@@ -94,6 +89,148 @@ func RunAndExit(c *Command, args, env []string) {
 	fmt.Fprintf(os.Stderr, "error: %v\n", err)
 
 	os.Exit(1)
+}
+
+func Run(app *Command, args, env []string) (err error) {
+	defer func() {
+		if errors.Is(err, ErrExit) {
+			err = nil
+		}
+	}()
+
+	cmds := make([]*Command, 0, 4)
+
+	cmds, err = parse(app, args, env, cmds)
+	if err != nil {
+		return wrap(err, "parse command")
+	}
+
+	err = func() error {
+		for _, c := range cmds {
+			for _, f := range c.Flags {
+				if f == nil {
+					continue
+				}
+
+				err = flag.CheckFlag(f)
+				if err != nil {
+					return wrap(err, f.MainName())
+				}
+			}
+		}
+
+		return nil
+	}()
+	if err != nil {
+		return wrap(err, "check flags")
+	}
+
+	for _, c := range cmds {
+		if f := c.Before; f != nil {
+			if err = f(c); err != nil {
+				return wrap(err, "before %v", c.MainName())
+			}
+		}
+
+		if f := c.After; f != nil {
+			defer func() {
+				err1 := f(c)
+				if err == nil && err1 != nil {
+					err = wrap(err1, "after %v", c.MainName())
+				}
+			}()
+		}
+	}
+
+	c := cmds[len(cmds)-1]
+
+	if c.Action == nil {
+		_, err = defaultHelp(&Flag{CurrentCommand: c}, "", nil)
+		if err != nil {
+			return wrap(err, "help")
+		}
+
+		return nil
+	}
+
+	return c.Action(c)
+}
+
+func parse(c *Command, args, env []string, cmds []*Command) (_ []*Command, err error) {
+	cmds = append(cmds, c)
+
+	c.OSArgs = args
+	c.OSEnv = env
+
+	c.Arg0 = args[0]
+	args = args[1:]
+
+	c.setup()
+
+	c.Env, err = c.parseEnv(env)
+	if err != nil {
+		return cmds, wrap(err, "parse env")
+	}
+
+	for len(args) != 0 {
+		arg := args[0]
+
+		if arg != "" && arg[0] == '-' && arg != "-" && arg != "--" {
+			args, err = c.parseFlag(arg, args[1:])
+			if err != nil {
+				return cmds, wrap(err, "parse `%v` flag", arg)
+			}
+
+			continue
+		}
+
+		if sub := c.Command(arg); sub != nil {
+			c.Chosen = sub
+
+			cmds, err = parse(sub, args, c.Env, cmds)
+			if err != nil {
+				return cmds, wrap(err, MainName(arg))
+			}
+
+			return cmds, nil
+		}
+
+		if c.Args == nil {
+			return cmds, fmt.Errorf("%w, got %v", ErrNoArgsExpected, arg)
+		}
+
+		if arg == "--" {
+			c.Args = append(c.Args, args[1:]...)
+			args = nil
+		} else {
+			c.Args = append(c.Args, arg)
+			args = args[1:]
+		}
+	}
+
+	return cmds, nil
+}
+
+func (c *Command) setup() {
+	if c.Stdout == nil {
+		if c.Parent != nil {
+			c.Stdout = c.Parent.Stdout
+		} else {
+			c.Stdout = os.Stdout
+		}
+	}
+
+	if c.Stderr == nil {
+		if c.Parent != nil {
+			c.Stderr = c.Parent.Stderr
+		} else {
+			c.Stderr = os.Stderr
+		}
+	}
+
+	for _, sub := range c.Commands {
+		sub.Parent = c
+	}
 }
 
 func ParseFlag(c *Command, arg string, more []string) ([]string, error) {
@@ -131,8 +268,6 @@ func (c *Command) Command(n string) *Command {
 			continue
 		}
 
-		sub.Parent = c
-
 		return sub
 	}
 
@@ -151,114 +286,6 @@ func (c *Command) Flag(n string) *Flag {
 			}
 
 			return f
-		}
-	}
-
-	return nil
-}
-
-func (c *Command) run(args, env []string) (err error) {
-	defer func() {
-		if errors.Is(err, ErrExit) {
-			err = nil
-		}
-	}()
-
-	c.OSArgs = args
-	c.OSEnv = env
-
-	c.Arg0 = args[0]
-	args = args[1:]
-
-	err = c.setup()
-	if err != nil {
-		return errors.WrapNoCaller(err, "setup")
-	}
-
-	c.Env, err = c.parseEnv(env)
-	if err != nil {
-		return errors.WrapNoCaller(err, "parse env")
-	}
-
-	last, comp := c.completeIndex()
-	if comp && c.Parent == nil {
-		args = args[:last-1]
-	}
-
-	for len(args) != 0 {
-		arg := args[0]
-
-		if arg != "" && arg[0] == '-' && arg != "-" && arg != "--" {
-			args, err = c.parseFlag(arg, args[1:])
-			if err != nil {
-				return errors.WrapNoCaller(err, "parse flag: %v", arg)
-			}
-
-			continue
-		}
-
-		if sub := c.Command(arg); sub != nil {
-			c.Chosen = sub
-			err = sub.run(args, c.Env)
-
-			return errors.WrapNoCaller(err, MainName(arg))
-		}
-
-		if c.Args == nil {
-			return fmt.Errorf("%w, got %v", ErrNoArgsExpected, arg)
-		}
-
-		if arg == "--" {
-			c.Args = append(c.Args, args[1:]...)
-			args = nil
-		} else {
-			c.Args = append(c.Args, arg)
-			args = args[1:]
-		}
-	}
-
-	if err = c.check(); err != nil {
-		return errors.WrapNoCaller(err, "check flags")
-	}
-
-	err = c.runBefore()
-	if err != nil {
-		return errors.WrapNoCaller(err, "before")
-	}
-
-	defer func() {
-		e := c.runAfter()
-		if err == nil {
-			err = errors.WrapNoCaller(e, "after")
-		}
-	}()
-
-	if comp {
-		return c.complete()
-	}
-
-	if c.Action == nil {
-		_, err = defaultHelp(&Flag{CurrentCommand: c}, "", nil)
-		return errors.WrapNoCaller(err, "help")
-	}
-
-	return c.Action(c)
-}
-
-func (c *Command) setup() error {
-	if c.Stdout == nil {
-		if c.Parent != nil {
-			c.Stdout = c.Parent.Stdout
-		} else {
-			c.Stdout = os.Stdout
-		}
-	}
-
-	if c.Stderr == nil {
-		if c.Parent != nil {
-			c.Stderr = c.Parent.Stderr
-		} else {
-			c.Stderr = os.Stderr
 		}
 	}
 
@@ -317,62 +344,6 @@ func GetEnvPrefix(c *Command) string {
 	}
 
 	return GetEnvPrefix(c.Parent)
-}
-
-func (c *Command) runBefore() (err error) {
-	if c.Parent != nil {
-		if err = c.Parent.runBefore(); err != nil {
-			return errors.WrapNoCaller(err, "%v", MainName(c.Parent.Name))
-		}
-	}
-
-	if c.Before != nil {
-		if err = c.Before(c); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (c *Command) runAfter() (err error) {
-	if c.Parent != nil {
-		defer func() {
-			e := c.Parent.runAfter()
-			if err == nil {
-				err = errors.WrapNoCaller(e, "%v", MainName(c.Parent.Name))
-			}
-		}()
-	}
-
-	if c.After != nil {
-		if err = c.After(c); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (c *Command) check() (err error) {
-	if c.Parent != nil {
-		err = c.Parent.check()
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, f := range c.Flags {
-		if f == nil {
-			continue
-		}
-
-		if err = flag.CheckFlag(f); err != nil {
-			return errors.WrapNoCaller(err, f.MainName())
-		}
-	}
-
-	return nil
 }
 
 func match(name, sub string) bool {

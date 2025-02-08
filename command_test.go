@@ -30,7 +30,7 @@ Possible multiline.
 	}
 	assert.NotNil(t, c.Args) // require
 
-	err := c.run([]string{"base", "first", "second", "--flag", "-"}, nil)
+	err := Run(c, []string{"base", "first", "second", "--flag", "-"}, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, Args{"first", "second", "-"}, c.Args)
 
@@ -42,7 +42,7 @@ Possible multiline.
 
 	//
 
-	err = c.run([]string{"base", "first", "second", "--flag2"}, nil)
+	err = Run(c, []string{"base", "first", "second", "--flag2"}, nil)
 	assert.ErrorIs(t, err, flag.ErrValueRequired)
 }
 
@@ -80,7 +80,7 @@ Possible multiline.
 
 	assert.NotNil(t, sub.Args) // require
 
-	err := c.run([]string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4"}, nil)
+	err := Run(c, []string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4"}, nil)
 
 	assert.NoError(t, err)
 
@@ -130,7 +130,7 @@ Possible multiline.
 
 	assert.NotNil(t, sub.Args) // require
 
-	err := c.run([]string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4", "--nonexisted"}, nil)
+	err := Run(c, []string{"base", "sub", "first", "second", "--flag=value", "-", "--subflag", "4", "--nonexisted"}, nil)
 
 	assert.ErrorIs(t, err, ErrNoSuchFlag)
 
@@ -163,7 +163,7 @@ Possible multiline.
 	}
 	assert.NotNil(t, c.Args) // require
 
-	err := c.run([]string{"base", "first", "--", "a", "--flag"}, nil)
+	err := Run(c, []string{"base", "first", "--", "a", "--flag"}, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, Args{"first", "a", "--flag"}, c.Args)
 
